@@ -1,0 +1,1 @@
+- [Honda POS Architecture](honda-pos-arch.md) — file-based JSON DB (not Drizzle/PG); types duplicated to api-server; no generated hooks.
