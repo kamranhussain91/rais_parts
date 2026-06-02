@@ -647,6 +647,57 @@ router.post("/expenses", (req, res) => {
   res.json({ success: true, db });
 });
 
+// PUT update expense
+router.put("/expenses/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const idx = db.expenses.findIndex((e) => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Expense not found" });
+
+  const old = db.expenses[idx];
+  const { category, amount, description, date } = req.body;
+  const newAmount = Number(amount) || old.amount;
+  const diff = newAmount - old.amount;
+
+  db.expenses[idx] = { ...old, category: category || old.category, amount: newAmount, description: description || old.description, date: date || old.date };
+
+  // Adjust ledger if amount changed
+  if (diff !== 0) {
+    const accId = old.bankAccountId || "cash_chest";
+    const accIdx = db.accounts.findIndex((a) => a.id === accId);
+    if (accIdx !== -1) {
+      db.accounts[accIdx].balance -= diff;
+      db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: accId, bankName: db.accounts[accIdx].bankName, date: new Date().toISOString(), type: "Debit", amount: Math.abs(diff), description: `Expense correction: ${db.expenses[idx].category} - ${db.expenses[idx].description}`, balanceAfter: db.accounts[accIdx].balance, referenceId: old.id });
+    }
+  }
+
+  logActivity(userId, username, `Expense updated [${db.expenses[idx].category}]: Rs. ${newAmount}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
+// DELETE expense
+router.delete("/expenses/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body?.auth || { userId: "1", username: "admin" };
+  const idx = db.expenses.findIndex((e) => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Expense not found" });
+
+  const exp = db.expenses[idx];
+  // Reverse the debit from the account
+  const accId = exp.bankAccountId || "cash_chest";
+  const accIdx = db.accounts.findIndex((a) => a.id === accId);
+  if (accIdx !== -1) {
+    db.accounts[accIdx].balance += exp.amount;
+    db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: accId, bankName: db.accounts[accIdx].bankName, date: new Date().toISOString(), type: "Credit", amount: exp.amount, description: `Expense reversal: ${exp.category} - ${exp.description}`, balanceAfter: db.accounts[accIdx].balance, referenceId: exp.id });
+  }
+
+  db.expenses.splice(idx, 1);
+  logActivity(userId, username, `Expense deleted [${exp.category}]: Rs. ${exp.amount}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
 // POST bank account transaction
 router.post("/bank-accounts/transaction", (req, res) => {
   const db = readDB();

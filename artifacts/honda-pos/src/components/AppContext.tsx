@@ -36,6 +36,8 @@ interface AppContextType {
   saveServiceRecord: (service: ServiceRecord) => Promise<boolean>;
   updateRemindersStatus: (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed') => Promise<boolean>;
   saveExpense: (expense: Expense) => Promise<boolean>;
+  updateExpense: (id: string, updates: Partial<Expense>) => Promise<boolean>;
+  deleteExpense: (id: string) => Promise<boolean>;
   saveBankTransaction: (id: string, type: 'Credit' | 'Debit', amount: number, description: string) => Promise<boolean>;
   triggerBackup: (type: 'Auto' | 'Manual') => Promise<boolean>;
   triggerRestore: (backupData: AppDatabase) => Promise<boolean>;
@@ -357,6 +359,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateExpense = async (id: string, updates: Partial<Expense>): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/expenses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updates, auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to update expense');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) { console.error(err); return false; }
+  };
+
+  const deleteExpense = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/expenses/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to delete expense');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) { console.error(err); return false; }
+  };
+
   const saveBankTransaction = async (id: string, type: 'Credit' | 'Debit', amount: number, description: string): Promise<boolean> => {
     try {
       const res = await fetch('/api/bank-accounts/transaction', {
@@ -450,6 +480,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveServiceRecord,
       updateRemindersStatus,
       saveExpense,
+      updateExpense,
+      deleteExpense,
       saveBankTransaction,
       triggerBackup,
       triggerRestore,

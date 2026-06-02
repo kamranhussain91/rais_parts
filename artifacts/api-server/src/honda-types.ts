@@ -111,7 +111,7 @@ export interface ServiceRecord {
   notes?: string;
 }
 
-export type ExpenseCategory = 'Rent' | 'Salary' | 'Electricity' | 'Marketing' | 'Miscellaneous';
+export type ExpenseCategory = 'Rent' | 'Salary' | 'Electricity' | 'Utilities' | 'Marketing' | 'Miscellaneous' | 'Transportation' | 'Office Supplies';
 
 export interface Expense {
   id: string;
