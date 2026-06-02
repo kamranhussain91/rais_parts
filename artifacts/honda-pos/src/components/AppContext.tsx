@@ -32,6 +32,7 @@ interface AppContextType {
   saveSaleInvoice: (invoice: SaleInvoice) => Promise<SaleInvoice | null>;
   updateSaleInvoice: (id: string, updates: Partial<SaleInvoice> & { notes?: string }) => Promise<boolean>;
   savePurchase: (purchase: PurchaseRecord) => Promise<boolean>;
+  receivePurchase: (id: string) => Promise<boolean>;
   saveServiceRecord: (service: ServiceRecord) => Promise<boolean>;
   updateRemindersStatus: (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed') => Promise<boolean>;
   saveExpense: (expense: Expense) => Promise<boolean>;
@@ -269,6 +270,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const receivePurchase = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/purchases/${id}/receive`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to mark purchase as received');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
   const saveServiceRecord = async (service: ServiceRecord): Promise<boolean> => {
     try {
       const res = await fetch('/api/services', {
@@ -428,6 +446,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveSaleInvoice,
       updateSaleInvoice,
       savePurchase,
+      receivePurchase,
       saveServiceRecord,
       updateRemindersStatus,
       saveExpense,

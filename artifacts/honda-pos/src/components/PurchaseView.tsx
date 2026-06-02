@@ -1,403 +1,579 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from './AppContext';
 import { PurchaseRecord, PurchaseItem, Product } from '../types';
-import { 
-  Plus, 
-  Trash2, 
-  FileText, 
-  User, 
-  Calendar, 
-  CreditCard, 
-  TrendingUp,
-  Coins,
-  CheckCircle
-} from 'lucide-react';
+import { Plus, Trash2, X, Eye, CheckCircle, Search, ChevronDown, Package } from 'lucide-react';
 
-export const PurchaseView: React.FC = () => {
-  const { db, savePurchase, saveProduct } = useApp();
+// ─── Searchable Product Dropdown ─────────────────────────────────────────────
+interface ProductDropdownProps {
+  products: Product[];
+  selectedId: string;
+  onSelect: (product: Product) => void;
+}
 
-  // Active restock form states
-  const [supplierName, setSupplierName] = useState('Honda Atlas Parts Ltd');
-  const [invoiceRef, setInvoiceRef] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'Mobile Wallet'>('Bank Transfer');
-  const [bankAccountId, setBankAccountId] = useState('bank_1');
+const ProductDropdown: React.FC<ProductDropdownProps> = ({ products, selectedId, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Selected item line states
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [qty, setQty] = useState<number>(10);
+  const selected = products.find(p => p.id === selectedId);
 
-  // Added items in active list
-  const [items, setItems] = useState<PurchaseItem[]>([]);
-  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.partNumber.toLowerCase().includes(search.toLowerCase())
+  );
 
-  if (!db) return <div className="p-8 text-neutral-500">Loading procurement logs...</div>;
-
-  const { products, purchases, accounts, suppliers } = db;
-
-  // Sync pricing when product selection changes
-  const handleProductChange = (prodId: string) => {
-    setSelectedProductId(prodId);
-    const prod = products.find(p => p.id === prodId);
-    if (prod) {
-      setPurchasePrice(prod.purchasePrice);
-    }
-  };
-
-  // Add line item to draft purchase list
-  const addItemLine = () => {
-    if (!selectedProductId) {
-      alert('Select a Honda catalog part first.');
-      return;
-    }
-    const prod = products.find(p => p.id === selectedProductId);
-    if (!prod) return;
-
-    if (qty <= 0) {
-      alert('Procurement quantity must be at least 1.');
-      return;
-    }
-
-    setItems(prev => {
-      // Check duplicate
-      const exists = prev.findIndex(item => item.productId === selectedProductId);
-      if (exists !== -1) {
-        const updated = [...prev];
-        updated[exists].qty += Number(qty);
-        return updated;
-      } else {
-        return [...prev, {
-          productId: selectedProductId,
-          name: prod.name,
-          partNumber: prod.partNumber,
-          purchasePrice: Number(purchasePrice),
-          qty: Number(qty)
-        }];
-      }
-    });
-
-    // Reset items select field
-    setSelectedProductId('');
-    setQty(10);
-    setPurchasePrice(0);
-  };
-
-  const removeLineItem = (index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const totalAmount = items.reduce((sum, item) => sum + (item.purchasePrice * item.qty), 0);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!invoiceRef.trim()) {
-      alert('Please enter the Supplier invoice/bill voucher reference number.');
-      return;
-    }
-
-    if (items.length === 0) {
-      alert('Adding at least 1 product line to restock is mandatory.');
-      return;
-    }
-
-    const payload: PurchaseRecord = {
-      id: '',
-      invoiceRef: invoiceRef.trim(),
-      date: new Date().toISOString(),
-      supplierName,
-      items,
-      totalAmount,
-      paymentMethod,
-      bankAccountId
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-    const success = await savePurchase(payload);
-    if (success) {
-      // Clear states
-      setItems([]);
-      setInvoiceRef('');
-    } else {
-      alert('Error updating core accounting ledger. Check credit limit on payment cash box.');
-    }
+  const handleOpen = () => {
+    setOpen(true);
+    setSearch('');
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="purchase-view-container">
-      
-      {/* PROCUREMENT DRAUGHT FORM PANEL */}
-      <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-neutral-100 shadow-xs space-y-5">
-        <div>
-          <h2 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
-            <Coins className="w-4 h-4 text-red-600" /> Procurement Purchase Entry (Stock Inflow)
-          </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">Increases catalog stock levels & calculates weighted averages of costs</p>
-        </div>
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between px-3 py-2 border border-slate-200 rounded-lg bg-white text-xs hover:border-slate-300 focus:outline-none focus:border-red-400 transition-colors"
+      >
+        <span className={selected ? 'text-slate-800 font-medium' : 'text-slate-400'}>
+          {selected ? selected.name : 'Select product...'}
+        </span>
+        <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+      </button>
 
-        <form onSubmit={handleSubmit} className="text-xs space-y-4">
-          
-          {/* Supplier, reference voucher and payments details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Supplier select */}
-            <div>
-              <label className="block text-neutral-500 font-bold mb-1.5">Select Wholesale Supplier Dealer</label>
-              <select 
-                className="w-full px-3 py-2 bg-neutral-50 rounded-lg border border-neutral-200 outline-hidden font-medium"
-                value={supplierName}
-                onChange={(e) => setSupplierName(e.target.value)}
-              >
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
-                ))}
-                {/* Fallback option */}
-                <option value="Direct Spot Market Purchase">Direct Market Spot Wholesalers</option>
-              </select>
-            </div>
-
-            {/* Reference Voucher No */}
-            <div>
-              <label className="block text-neutral-500 font-bold mb-1.5">Supplier Invoice Reference #</label>
-              <input 
-                type="text" 
-                required
-                placeholder="e.g. HONDA-99120"
-                className="w-full px-3 py-2 bg-neutral-50 rounded-lg border border-neutral-200 font-mono font-bold outline-hidden focus:bg-white focus:border-red-500"
-                value={invoiceRef}
-                onChange={(e) => setInvoiceRef(e.target.value)}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-slate-50 rounded-md">
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search by name or part no..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="flex-1 bg-transparent text-xs outline-none text-slate-700 placeholder-slate-400"
               />
             </div>
-
-            {/* Payment selectors */}
-            <div>
-              <label className="block text-neutral-500 font-bold mb-1.5">Invoice Pay Method</label>
-              <select 
-                className="w-full px-3 py-2 bg-neutral-50 rounded-lg border border-neutral-200 outline-hidden"
-                value={paymentMethod}
-                onChange={(e: any) => setPaymentMethod(e.target.value)}
-              >
-                <option value="Bank Transfer">Bank Wire Transfer</option>
-                <option value="Cash">Cash Ledger Chest</option>
-                <option value="Mobile Wallet">Wholesale Wallet Trade</option>
-              </select>
-            </div>
-
-            {/* Accounts selectors */}
-            <div>
-              <label className="block text-neutral-500 font-bold mb-1.5">Debit Outflow Account</label>
-              <select 
-                className="w-full px-3 py-2 bg-neutral-50 rounded-lg border border-neutral-200 outline-hidden"
-                value={bankAccountId}
-                onChange={(e) => setBankAccountId(e.target.value)}
-              >
-                {accounts.filter(acc => {
-                  if (paymentMethod === 'Cash') return acc.id === 'cash_chest';
-                  return acc.id !== 'cash_chest';
-                }).map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.bankName} (Bal: Rs.{acc.balance})</option>
-                ))}
-              </select>
-            </div>
-
           </div>
-
-          <div className="border-t border-dashed border-neutral-100 pt-4" />
-
-          {/* DYNAMIC ITEM LINE INCORPORATION */}
-          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 space-y-3">
-            <span className="font-bold text-neutral-700 block text-xxs uppercase tracking-wider">Configure Inflow Part Lines</span>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-              
-              {/* Product select dropdown */}
-              <div className="sm:col-span-5">
-                <label className="block text-neutral-500 mb-1">Honda Part Title</label>
-                <select 
-                  className="w-full px-2 py-1.5 bg-white border border-neutral-200 rounded text-xxs font-medium"
-                  value={selectedProductId}
-                  onChange={(e) => handleProductChange(e.target.value)}
-                >
-                  <option value="">-- Choose Part item --</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (Part: {p.partNumber})</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Buying price */}
-              <div className="sm:col-span-3">
-                <label className="block text-neutral-500 mb-1">Wholesale Purchase Price (Rs.)</label>
-                <input 
-                  type="number" 
-                  className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xxs font-mono"
-                  value={purchasePrice === 0 ? '' : purchasePrice}
-                  onChange={(e) => setPurchasePrice(Math.max(0, Number(e.target.value)))}
-                />
-              </div>
-
-              {/* qty */}
-              <div className="sm:col-span-2">
-                <label className="block text-neutral-500 mb-1">In Bulk Qty</label>
-                <input 
-                  type="number" 
-                  className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xxs font-mono"
-                  value={qty}
-                  onChange={(e) => setQty(Math.max(1, Number(e.target.value)))}
-                />
-              </div>
-
-              {/* Add trigger */}
-              <div className="sm:col-span-2">
-                <button 
+          <div className="max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-6 text-center text-xs text-slate-400">No products found</div>
+            ) : (
+              filtered.map(p => (
+                <button
+                  key={p.id}
                   type="button"
-                  className="w-full py-1.5 bg-neutral-800 hover:bg-neutral-900 text-white rounded font-bold text-xxs cursor-pointer flex items-center justify-center gap-1"
-                  onClick={addItemLine}
+                  onClick={() => { onSelect(p); setOpen(false); setSearch(''); }}
+                  className={`w-full text-left px-3 py-2.5 hover:bg-red-50 transition-colors flex items-start gap-2 ${p.id === selectedId ? 'bg-red-50' : ''}`}
                 >
-                  <Plus className="w-3.5 h-3.5" /> Append
+                  <Package className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">{p.name}</p>
+                    <p className="text-[10px] text-slate-400 font-mono">P/N: {p.partNumber} · Stock: {p.stock} · Rs. {p.purchasePrice}</p>
+                  </div>
                 </button>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Lines Table draft list */}
-          <div className="border border-neutral-100 rounded-lg overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-neutral-50 text-neutral-400 font-bold uppercase text-[10px] border-b border-neutral-100">
-                  <th className="py-2.5 px-3 text-left">Part Name</th>
-                  <th className="py-2.5 px-3 text-center">Unit Cost</th>
-                  <th className="py-2.5 px-3 text-center">Total Qty</th>
-                  <th className="py-2.5 px-3 text-right">Aggregate</th>
-                  <th className="py-2.5 px-3 text-center">Delete</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 text-xxs font-medium text-neutral-600">
-                {items.map((line, idx) => (
-                  <tr key={idx}>
-                    <td className="py-2.5 px-3 text-left">
-                      <span className="font-bold text-neutral-800 block text-xs">{line.name}</span>
-                      <span className="text-xxs font-mono text-neutral-400">P/N: {line.partNumber}</span>
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-mono">Rs.{line.purchasePrice}</td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-neutral-800">{line.qty}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-bold text-neutral-800">Rs.{line.purchasePrice * line.qty}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <button 
-                        type="button" 
-                        className="text-neutral-300 hover:text-rose-500 rounded p-1"
-                        onClick={() => removeLineItem(idx)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-6 text-center text-neutral-400">Your draft order is empty. Select catalog elements above.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Submittals summary bar */}
-          <div className="p-4 bg-red-50/50 rounded-xl border border-red-100/50 flex align-middle justify-between items-center">
-            <div className="text-xs">
-              <span className="block text-neutral-500 font-semibold uppercase tracking-wider text-[10px]">Grand restock outflow sum</span>
-              <span className="font-mono text-lg font-bold text-red-600">Rs.{totalAmount.toLocaleString()}</span>
-            </div>
-            <button 
-              type="submit"
-              disabled={items.length === 0}
-              className={`px-5 py-2.5 font-bold rounded-lg text-white font-sans flex items-center gap-1.5 shadow-sm uppercase ${items.length === 0 ? 'bg-neutral-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 cursor-pointer transition-colors'}`}
-            >
-              <CheckCircle className="w-4 h-4" /> Save restocking order
-            </button>
-          </div>
-
-        </form>
-      </div>
-
-      {/* PROCUREMENT HISTORIES LOG TABLE */}
-      <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-neutral-100 shadow-xs flex flex-col justify-between">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-neutral-800 flex items-center gap-1.5">
-              <FileText className="w-4 h-4 text-red-600" /> restock order sheet (Vouchers)
-            </h2>
-            <p className="text-xs text-neutral-400 mt-0.5">Replenishment tracking list. Tap a card to select features</p>
-          </div>
- 
-          <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1 text-xs">
-            {purchases.map(pc => {
-              const isSelected = selectedPurchaseId === pc.id;
-              return (
-                <div 
-                  key={pc.id} 
-                  className={`p-4 rounded-xl border select-none transition-all duration-300 transform hover:scale-[1.01] cursor-pointer flex flex-col gap-2.5 ${
-                    isSelected 
-                      ? 'bg-red-600 border-red-700 text-white shadow-md' 
-                      : 'bg-white border-slate-200 hover:border-red-200 hover:bg-red-50/30 text-slate-700'
-                  }`}
-                  onClick={() => setSelectedPurchaseId(isSelected ? null : pc.id)}
-                  id={`purchase-card-${pc.id}`}
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <div>
-                      <span className={`font-black block text-xs ${isSelected ? 'text-white' : 'text-slate-800'}`}>
-                        Ref: {pc.invoiceRef}
-                      </span>
-                      <span className={`text-[10px] flex items-center gap-1 mt-0.5 ${isSelected ? 'text-red-100' : 'text-slate-400'}`}>
-                        <Calendar className="w-3 h-3" /> {new Date(pc.date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${
-                      isSelected 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-red-50 border border-red-100 text-red-600 font-extrabold'
-                    }`}>
-                      Rs.{pc.totalAmount.toLocaleString()}
-                    </span>
-                  </div>
- 
-                  <div className={`text-[11px] border-t pt-2.5 space-y-2`} style={{ borderColor: isSelected ? 'rgba(255,255,255,0.15)' : '#f1f5f9' }}>
-                    <div className="flex items-center justify-between">
-                      <span className={`font-bold ${isSelected ? 'text-red-100' : 'text-slate-400'}`}>Supplier Room</span>
-                      <span className={`font-extrabold ${isSelected ? 'text-white' : 'text-slate-700'}`}>{pc.supplierName}</span>
-                    </div>
-
-                    <div className={`max-h-20 overflow-y-auto space-y-1 p-2 rounded text-[10px] ${
-                      isSelected ? 'bg-black/10 text-white' : 'bg-slate-50 text-slate-600'
-                    }`}>
-                      {pc.items.map((line, idx) => (
-                        <div key={idx} className="flex justify-between font-mono">
-                          <span className="truncate max-w-[155px] font-sans font-medium">{line.name}</span>
-                          <span>{line.qty} x Rs.{line.purchasePrice}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-1.5 justify-end text-[10px]">
-                      <span className={isSelected ? 'text-red-200' : 'text-slate-400'}>Pay Method:</span>
-                      <strong className={`uppercase font-mono ${isSelected ? 'text-white' : 'font-bold text-slate-700'}`}>{pc.paymentMethod}</strong>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {purchases.length === 0 && (
-              <div className="py-12 text-center text-neutral-400">No procurement purchases recorded yet in database.</div>
+              ))
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Draft item row type ──────────────────────────────────────────────────────
+interface DraftItem {
+  productId: string;
+  name: string;
+  partNumber: string;
+  qty: number;
+  unitCost: number;
+}
+
+// ─── View Purchase Modal ──────────────────────────────────────────────────────
+interface ViewModalProps {
+  purchase: PurchaseRecord;
+  onClose: () => void;
+}
+
+const ViewModal: React.FC<ViewModalProps> = ({ purchase, onClose }) => {
+  const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-800 text-sm">Purchase Order Details</h3>
+            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{purchase.invoiceRef}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Supplier</p><p className="font-bold text-slate-800">{purchase.supplierName}</p></div>
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Date</p><p className="font-bold text-slate-800">{fmt(purchase.date)}</p></div>
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Total Amount</p><p className="font-bold text-red-600 font-mono">Rs. {purchase.totalAmount.toLocaleString()}</p></div>
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Amount Paid</p><p className="font-bold text-slate-800 font-mono">Rs. {(purchase.amountPaid || 0).toLocaleString()}</p></div>
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Payment</p><p className="font-semibold text-slate-700">{purchase.paymentMethod}</p></div>
+            <div><p className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] mb-1">Status</p>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${purchase.status === 'received' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                {purchase.status === 'received' ? 'Received' : 'Pending'}
+              </span>
+            </div>
+          </div>
+          {purchase.notes && (
+            <div className="bg-slate-50 rounded-lg p-3 text-xs text-slate-600">
+              <p className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] mb-1">Notes</p>
+              {purchase.notes}
+            </div>
+          )}
+          <div>
+            <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px] mb-2">Items ({purchase.items.length})</p>
+            <div className="border border-slate-100 rounded-lg overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-500 uppercase">Product</th>
+                    <th className="px-3 py-2 text-center text-[10px] font-bold text-slate-500 uppercase">Qty</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold text-slate-500 uppercase">Unit Cost</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold text-slate-500 uppercase">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {purchase.items.map((item, i) => (
+                    <tr key={i}>
+                      <td className="px-3 py-2">
+                        <p className="font-semibold text-slate-800">{item.name}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">{item.partNumber}</p>
+                      </td>
+                      <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
+                      <td className="px-3 py-2 text-right font-mono">Rs. {item.purchasePrice.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-mono font-bold">Rs. {(item.purchasePrice * item.qty).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── New Purchase Modal ───────────────────────────────────────────────────────
+interface NewPurchaseModalProps {
+  products: Product[];
+  suppliers: { id: string; name: string }[];
+  accounts: { id: string; bankName: string; balance: number }[];
+  onClose: () => void;
+  onSave: (purchase: PurchaseRecord) => Promise<boolean>;
+}
+
+const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({ products, suppliers, accounts, onClose, onSave }) => {
+  const [supplierName, setSupplierName] = useState('');
+  const [invoiceRef] = useState(() => `PO-${Math.floor(100000 + Math.random() * 900000)}`);
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'Mobile Wallet'>('Bank Transfer');
+  const [bankAccountId, setBankAccountId] = useState(() => accounts.find(a => a.id !== 'cash_chest')?.id || accounts[0]?.id || '');
+  const [items, setItems] = useState<DraftItem[]>([{ productId: '', name: '', partNumber: '', qty: 1, unitCost: 0 }]);
+  const [saving, setSaving] = useState(false);
+
+  const total = items.reduce((s, i) => s + i.qty * i.unitCost, 0);
+
+  const addItem = () => setItems(prev => [...prev, { productId: '', name: '', partNumber: '', qty: 1, unitCost: 0 }]);
+  const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx));
+
+  const updateItem = (idx: number, field: keyof DraftItem, value: string | number) => {
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+  };
+
+  const handleProductSelect = (idx: number, product: Product) => {
+    setItems(prev => prev.map((item, i) => i === idx ? {
+      ...item,
+      productId: product.id,
+      name: product.name,
+      partNumber: product.partNumber,
+      unitCost: product.purchasePrice
+    } : item));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplierName.trim()) return alert('Please select a supplier.');
+    if (items.some(i => !i.productId)) return alert('Please select a product for each item row.');
+    if (items.some(i => i.qty < 1)) return alert('Quantity must be at least 1 for all items.');
+
+    setSaving(true);
+    const purchaseItems: PurchaseItem[] = items.map(i => ({
+      productId: i.productId,
+      name: i.name,
+      partNumber: i.partNumber,
+      purchasePrice: i.unitCost,
+      qty: i.qty
+    }));
+
+    const purchase: PurchaseRecord = {
+      id: '',
+      invoiceRef,
+      date: new Date(date).toISOString(),
+      supplierName,
+      items: purchaseItems,
+      totalAmount: total,
+      amountPaid,
+      paymentMethod,
+      bankAccountId,
+      status: 'pending',
+      notes: notes.trim() || undefined
+    };
+
+    const ok = await onSave(purchase);
+    setSaving(false);
+    if (ok) onClose();
+    else alert('Failed to save purchase order. Please try again.');
+  };
+
+  const filteredAccounts = accounts.filter(a =>
+    paymentMethod === 'Cash' ? a.id === 'cash_chest' : a.id !== 'cash_chest'
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <h3 className="font-bold text-slate-800">New Purchase Order</h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
+            {/* Row 1: Supplier + Invoice Number */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Supplier <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={supplierName}
+                  onChange={e => setSupplierName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 bg-white appearance-none cursor-pointer"
+                >
+                  <option value="">Select supplier...</option>
+                  {suppliers.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Invoice Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={invoiceRef}
+                  readOnly
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono bg-slate-50 text-slate-600 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Date + Amount Paid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Date</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Amount Paid (Rs.)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={amountPaid || ''}
+                  onChange={e => setAmountPaid(Math.max(0, Number(e.target.value)))}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Payment Method + Account */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 bg-white"
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Mobile Wallet">Mobile Wallet</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Debit Account</label>
+                <select
+                  value={bankAccountId}
+                  onChange={e => setBankAccountId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 bg-white"
+                >
+                  {filteredAccounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.bankName} (Rs. {a.balance.toLocaleString()})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Notes</label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Optional notes..."
+                rows={2}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 resize-none"
+              />
+            </div>
+
+            {/* Items */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-slate-700">
+                  Items <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-700 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Item
+                </button>
+              </div>
+
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider w-20">Qty</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider w-28">Unit Cost</th>
+                      <th className="px-3 py-2.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider w-24">Total</th>
+                      <th className="px-3 py-2.5 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {items.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="px-3 py-2">
+                          <ProductDropdown
+                            products={products}
+                            selectedId={item.productId}
+                            onSelect={p => handleProductSelect(idx, p)}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.qty}
+                            onChange={e => updateItem(idx, 'qty', Math.max(1, Number(e.target.value)))}
+                            className="w-full px-2 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-center outline-none focus:border-red-400"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={item.unitCost || ''}
+                            onChange={e => updateItem(idx, 'unitCost', Math.max(0, Number(e.target.value)))}
+                            placeholder="0"
+                            className="w-full px-2 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-center outline-none focus:border-red-400"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-bold text-slate-800">
+                          Rs. {(item.qty * item.unitCost).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeItem(idx)}
+                            disabled={items.length === 1}
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Total row */}
+                    <tr className="bg-slate-50">
+                      <td colSpan={3} className="px-3 py-2.5 text-right text-xs font-bold text-slate-600">Total:</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-sm font-bold text-red-600">
+                        Rs. {total.toLocaleString()}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex gap-3 px-6 py-4 border-t border-slate-100 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold transition-all cursor-pointer"
+            >
+              {saving ? 'Saving...' : 'Create Purchase'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main PurchaseView ────────────────────────────────────────────────────────
+export const PurchaseView: React.FC = () => {
+  const { db, savePurchase, receivePurchase } = useApp();
+  const [showNew, setShowNew] = useState(false);
+  const [viewPurchase, setViewPurchase] = useState<PurchaseRecord | null>(null);
+
+  if (!db) return <div className="p-8 text-slate-400 text-sm">Loading purchases...</div>;
+
+  const { purchases, products, suppliers, accounts } = db;
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const handleReceive = async (id: string) => {
+    if (!confirm('Mark this purchase as received?')) return;
+    await receivePurchase(id);
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div />
+        <button
+          onClick={() => setShowNew(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-all cursor-pointer shadow-sm"
+        >
+          <Plus className="w-4 h-4" /> New Purchase
+        </button>
       </div>
 
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-slate-100 bg-slate-50/60">
+              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</th>
+              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
+              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Supplier</th>
+              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total</th>
+              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Paid</th>
+              <th className="px-5 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+              <th className="px-5 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {purchases.length === 0 && (
+              <tr>
+                <td colSpan={7} className="py-16 text-center text-slate-400 text-sm">
+                  No purchase orders yet. Click "+ New Purchase" to create one.
+                </td>
+              </tr>
+            )}
+            {purchases.map(pc => (
+              <tr key={pc.id} className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-5 py-3.5">
+                  <span className="font-bold text-xs font-mono text-slate-800">{pc.invoiceRef}</span>
+                </td>
+                <td className="px-5 py-3.5 text-xs text-slate-600">{fmt(pc.date)}</td>
+                <td className="px-5 py-3.5 text-xs font-semibold text-slate-800">{pc.supplierName}</td>
+                <td className="px-5 py-3.5">
+                  <span className="text-xs font-bold text-slate-800 font-mono">Rs. {pc.totalAmount.toLocaleString()}</span>
+                </td>
+                <td className="px-5 py-3.5">
+                  <span className="text-xs text-slate-600 font-mono">Rs. {(pc.amountPaid || 0).toLocaleString()}</span>
+                </td>
+                <td className="px-5 py-3.5 text-center">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                    pc.status === 'received'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {pc.status === 'received' ? 'received' : 'pending'}
+                  </span>
+                </td>
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setViewPurchase(pc)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> View
+                    </button>
+                    {pc.status !== 'received' && (
+                      <button
+                        onClick={() => handleReceive(pc.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" /> Receive
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modals */}
+      {showNew && (
+        <NewPurchaseModal
+          products={products}
+          suppliers={suppliers}
+          accounts={accounts}
+          onClose={() => setShowNew(false)}
+          onSave={savePurchase}
+        />
+      )}
+      {viewPurchase && (
+        <ViewModal purchase={viewPurchase} onClose={() => setViewPurchase(null)} />
+      )}
     </div>
   );
 };

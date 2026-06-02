@@ -533,6 +533,8 @@ router.post("/purchases", (req, res) => {
 
   purchase.id = "pur_" + Date.now();
   purchase.date = new Date().toISOString();
+  purchase.status = 'pending';
+  if (!purchase.amountPaid) purchase.amountPaid = 0;
 
   purchase.items.forEach((item) => {
     const pIdx = db.products.findIndex((p) => p.id === item.productId);
@@ -549,14 +551,29 @@ router.post("/purchases", (req, res) => {
   }
   db.purchases.unshift(purchase);
 
-  const targetAccId = purchase.paymentMethod === "Cash" ? "cash_chest" : (purchase.bankAccountId || "bank_1");
-  const accIdx = db.accounts.findIndex((a) => a.id === targetAccId);
-  if (accIdx !== -1) {
-    db.accounts[accIdx].balance -= purchase.totalAmount;
-    db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: targetAccId, bankName: db.accounts[accIdx].bankName, date: purchase.date, type: "Debit", amount: purchase.totalAmount, description: `Purchase Ref ${purchase.invoiceRef} (${purchase.supplierName})`, balanceAfter: db.accounts[accIdx].balance, referenceId: purchase.id });
+  const paid = purchase.amountPaid || 0;
+  if (paid > 0) {
+    const targetAccId = purchase.paymentMethod === "Cash" ? "cash_chest" : (purchase.bankAccountId || "bank_1");
+    const accIdx = db.accounts.findIndex((a) => a.id === targetAccId);
+    if (accIdx !== -1) {
+      db.accounts[accIdx].balance -= paid;
+      db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: targetAccId, bankName: db.accounts[accIdx].bankName, date: purchase.date, type: "Debit", amount: paid, description: `Purchase ${purchase.invoiceRef} (${purchase.supplierName})`, balanceAfter: db.accounts[accIdx].balance, referenceId: purchase.id });
+    }
   }
 
-  logActivity(userId, username, `Purchase Order ${purchase.invoiceRef}. Paid: Rs. ${purchase.totalAmount}`);
+  logActivity(userId, username, `Purchase Order ${purchase.invoiceRef}. Total: Rs. ${purchase.totalAmount}, Paid: Rs. ${paid}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
+// PATCH mark purchase as received
+router.patch("/purchases/:id/receive", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const idx = db.purchases.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Purchase not found" });
+  db.purchases[idx].status = 'received';
+  logActivity(userId, username, `Purchase ${db.purchases[idx].invoiceRef} marked as received`);
   writeDB(db);
   res.json({ success: true, db });
 });

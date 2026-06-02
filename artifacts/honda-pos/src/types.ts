@@ -88,8 +88,11 @@ export interface PurchaseRecord {
   supplierName: string;
   items: PurchaseItem[];
   totalAmount: number;
+  amountPaid: number;
   paymentMethod: 'Cash' | 'Bank Transfer' | 'Mobile Wallet';
   bankAccountId?: string;
+  status?: 'pending' | 'received';
+  notes?: string;
 }
 
 export type ServiceType = 'Oil Change' | 'Bike Tuning' | 'Brake Service' | 'Engine Service';
