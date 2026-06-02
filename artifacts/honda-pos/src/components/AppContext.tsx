@@ -30,6 +30,7 @@ interface AppContextType {
   saveProduct: (product: Product) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<boolean>;
   saveSaleInvoice: (invoice: SaleInvoice) => Promise<SaleInvoice | null>;
+  updateSaleInvoice: (id: string, updates: Partial<SaleInvoice> & { notes?: string }) => Promise<boolean>;
   savePurchase: (purchase: PurchaseRecord) => Promise<boolean>;
   saveServiceRecord: (service: ServiceRecord) => Promise<boolean>;
   updateRemindersStatus: (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed') => Promise<boolean>;
@@ -222,6 +223,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateSaleInvoice = async (id: string, updates: Partial<SaleInvoice> & { notes?: string }): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/sales/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates,
+          auth: { userId: currentUser?.id, username: currentUser?.username }
+        })
+      });
+      if (!res.ok) throw new Error('API failed to update invoice');
+      const result = await res.json();
+      if (result.success) {
+        setDb(result.db);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
   const savePurchase = async (purchase: PurchaseRecord): Promise<boolean> => {
     try {
       const res = await fetch('/api/purchases', {
@@ -402,6 +426,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveProduct,
       deleteProduct,
       saveSaleInvoice,
+      updateSaleInvoice,
       savePurchase,
       saveServiceRecord,
       updateRemindersStatus,

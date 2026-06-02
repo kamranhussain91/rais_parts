@@ -465,6 +465,49 @@ router.post("/sales", async (req, res) => {
   res.json({ success: true, db, invoice });
 });
 
+// PUT update invoice (edit customer info, payment, discount)
+router.put("/sales/:id", async (req, res) => {
+  const db = readDB();
+  const { id } = req.params;
+  const { updates, auth } = req.body;
+  const { userId, username } = auth || { userId: "1", username: "admin" };
+
+  const invIdx = db.invoices.findIndex((inv) => inv.id === id);
+  if (invIdx === -1) return res.status(404).json({ success: false, error: "Invoice not found" });
+
+  const original = db.invoices[invIdx];
+
+  const updatedInvoice = {
+    ...original,
+    customerName: updates.customerName ?? original.customerName,
+    customerPhone: updates.customerPhone ?? original.customerPhone,
+    customerAddress: updates.customerAddress ?? original.customerAddress,
+    customerBikeModel: updates.customerBikeModel ?? original.customerBikeModel,
+    paymentMethod: updates.paymentMethod ?? original.paymentMethod,
+    bankAccountId: updates.bankAccountId ?? original.bankAccountId,
+    discount: updates.discount !== undefined ? Number(updates.discount) : original.discount,
+    notes: updates.notes ?? (original as any).notes,
+  } as SaleInvoice;
+
+  // Recalculate totals if discount changed
+  if (updates.discount !== undefined && Number(updates.discount) !== original.discount) {
+    const taxRate = (original as any).taxRate ?? 18;
+    const taxableSubtotal = Math.max(0, original.subtotal - Number(updates.discount));
+    const taxAmount = Math.round(taxableSubtotal * (taxRate / 100));
+    (updatedInvoice as any).taxRate = taxRate;
+    (updatedInvoice as any).taxAmount = taxAmount;
+    updatedInvoice.finalAmount = taxableSubtotal + taxAmount;
+    updatedInvoice.profit = Math.max(0, (original.profit ?? 0) + (original.discount - Number(updates.discount)));
+  }
+
+  await updateInvoiceQRCodeAndHash(updatedInvoice, req.get("host"));
+  db.invoices[invIdx] = updatedInvoice;
+
+  logActivity(userId, username, `Edited invoice ${original.invoiceNumber}`);
+  writeDB(db);
+  res.json({ success: true, db, invoice: updatedInvoice });
+});
+
 // GET verify invoice
 router.get("/sales/verify", (req, res) => {
   const invoiceNumber = req.query.invoice as string;

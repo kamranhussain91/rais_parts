@@ -416,7 +416,7 @@
       "price": 150,
       "date": "2026-05-01T12:00:00.000Z",
       "nextReminderDate": "2026-05-31T12:00:00.000Z",
-      "reminderStatus": "Sent",
+      "reminderStatus": "Confirmed",
       "notes": "Oil changed. Recommended tuning next visit."
     },
     {
@@ -440,7 +440,7 @@
       "price": 150,
       "date": "2026-06-01T08:30:00.000Z",
       "nextReminderDate": "2026-07-01T08:30:00.000Z",
-      "reminderStatus": "Pending",
+      "reminderStatus": "Sent",
       "notes": "Honda 4T oil poured."
     },
     {
@@ -453,7 +453,7 @@
       "price": 200,
       "date": "2026-04-30T14:00:00.000Z",
       "nextReminderDate": "2026-05-30T14:00:00.000Z",
-      "reminderStatus": "Pending",
+      "reminderStatus": "Sent",
       "notes": "Regular engine oil top up."
     },
     {
@@ -467,7 +467,7 @@
       "date": "2026-06-02T11:16:28.763Z",
       "notes": "",
       "nextReminderDate": "2026-07-02T11:16:28.763Z",
-      "reminderStatus": "Pending"
+      "reminderStatus": "Sent"
     }
   ],
   "expenses": [

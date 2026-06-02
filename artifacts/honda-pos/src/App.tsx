@@ -15,9 +15,11 @@ import { InvoiceVerificationView } from './components/InvoiceVerificationView';
 import { PublicInvoiceVerification } from './components/PublicInvoiceVerification';
 import { UsersView } from './components/UsersView';
 import { LoginView } from './components/LoginView';
+import { SalesHistoryView } from './components/SalesHistoryView';
 import {
   LayoutDashboard,
   ShoppingBag,
+  History,
   Wrench,
   Bell,
   Package,
@@ -42,6 +44,7 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, role: 'Cashier' },
     { id: 'pos', label: 'POS', icon: ShoppingBag, role: 'Cashier' },
+    { id: 'sales-history', label: 'Sales History', icon: History, role: 'Cashier' },
     { id: 'workshop', label: 'Workshop', icon: Wrench, role: 'Cashier' },
     { id: 'reminders', label: 'Reminders', icon: Bell, role: 'Cashier' },
     { id: 'inventory', label: 'Inventory', icon: Package, role: 'Cashier' },
@@ -101,6 +104,7 @@ const HeaderBar: React.FC = () => {
     switch (currentTab) {
       case 'dashboard': return 'Dashboard';
       case 'pos': return 'Point of Sale';
+      case 'sales-history': return 'Sales History';
       case 'verify-invoice': return 'FBR Invoice Verifier';
       case 'workshop': return 'Workshop Tickets';
       case 'reminders': return 'Service Reminders';
@@ -155,6 +159,7 @@ const ContentViewport: React.FC = () => {
     <main className={`flex-1 bg-slate-50 ${isPOS ? 'overflow-hidden' : 'overflow-y-auto p-6'}`} id="main-content-viewport-layout">
       {currentTab === 'dashboard' && <DashboardView />}
       {currentTab === 'pos' && <POSView />}
+      {currentTab === 'sales-history' && <SalesHistoryView />}
       {currentTab === 'verify-invoice' && <InvoiceVerificationView />}
       {currentTab === 'inventory' && <InventoryView />}
       {currentTab === 'purchase' && <PurchaseView />}
