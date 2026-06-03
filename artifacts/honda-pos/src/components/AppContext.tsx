@@ -41,6 +41,9 @@ interface AppContextType {
   saveBankTransaction: (id: string, type: 'Credit' | 'Debit', amount: number, description: string) => Promise<boolean>;
   triggerBackup: (type: 'Auto' | 'Manual') => Promise<boolean>;
   triggerRestore: (backupData: AppDatabase) => Promise<boolean>;
+  saveCustomer: (customer: Customer) => Promise<boolean>;
+  updateCustomer: (id: string, customer: Partial<Customer>) => Promise<boolean>;
+  deleteCustomer: (id: string) => Promise<boolean>;
   saveUser: (user: User) => Promise<boolean>;
   deleteUser: (id: string) => Promise<boolean>;
   
@@ -460,6 +463,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const saveCustomer = async (customer: Customer): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer, auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to save customer');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) { console.error(err); return false; }
+  };
+
+  const updateCustomer = async (id: string, customer: Partial<Customer>): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer, auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to update customer');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) { console.error(err); return false; }
+  };
+
+  const deleteCustomer = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth: { userId: currentUser?.id, username: currentUser?.username } })
+      });
+      if (!res.ok) throw new Error('Failed to delete customer');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) { console.error(err); return false; }
+  };
+
   return (
     <AppContext.Provider value={{
       db,
@@ -485,6 +530,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveBankTransaction,
       triggerBackup,
       triggerRestore,
+      saveCustomer,
+      updateCustomer,
+      deleteCustomer,
       saveUser,
       deleteUser,
       terminalId,

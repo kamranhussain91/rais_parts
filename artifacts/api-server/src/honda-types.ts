@@ -146,6 +146,7 @@ export interface Customer {
   phone: string;
   address: string;
   bikeModel: string;
+  creditBalance?: number;
 }
 
 export interface Supplier {

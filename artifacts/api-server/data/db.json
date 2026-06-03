@@ -10,17 +10,8 @@
       "lastLogin": "2026-06-02T09:00:00.000Z"
     },
     {
-      "id": "2",
-      "username": "manager",
-      "role": "Manager",
-      "name": "Store Manager",
-      "password": "manager",
-      "status": "Active",
-      "lastLogin": "2026-06-02T08:45:00.000Z"
-    },
-    {
       "id": "3",
-      "username": "cashier1",
+      "username": "cashier",
       "role": "Cashier",
       "name": "Cashier One",
       "password": "cashier",
@@ -75,7 +66,7 @@
       "compatibility": "CD-70, CG-125",
       "purchasePrice": 320,
       "sellingPrice": 450,
-      "stock": 3,
+      "stock": 2,
       "minStock": 10,
       "supplierName": "Allied Auto Distributors",
       "location": "Rack B, Shelf 1"
@@ -89,7 +80,7 @@
       "compatibility": "CG-125, CG-125 Self",
       "purchasePrice": 400,
       "sellingPrice": 550,
-      "stock": 19,
+      "stock": 18,
       "minStock": 5,
       "supplierName": "Honda Atlas Parts Ltd",
       "location": "Rack A, Shelf 3"
@@ -377,6 +368,49 @@
       "fbrInvoiceNumber": "123101369169",
       "fbrSubmitTime": "2026-06-02T11:56:28.628Z",
       "notes": ""
+    },
+    {
+      "id": "inv_1780405310544",
+      "invoiceNumber": "T1-INV-20260602-004",
+      "date": "2026-06-02T13:01:50.544Z",
+      "customerId": "cust_1780398139184",
+      "customerName": "Walk-in Customer",
+      "customerPhone": "N/A",
+      "customerAddress": "",
+      "customerBikeModel": "",
+      "items": [
+        {
+          "productId": "prod_4",
+          "name": "CG-125 Genuine Air Filter Element",
+          "partNumber": "17211-397-000",
+          "qty": 1,
+          "purchasePrice": 400,
+          "sellingPrice": 550
+        },
+        {
+          "productId": "prod_3",
+          "name": "Front Brake Shoe Set",
+          "partNumber": "43125-086-030",
+          "qty": 1,
+          "purchasePrice": 320,
+          "sellingPrice": 450
+        }
+      ],
+      "subtotal": 1000,
+      "discount": 0,
+      "finalAmount": 1180,
+      "paymentMethod": "Cash",
+      "bankAccountId": "cash_chest",
+      "profit": 280,
+      "terminalId": "T1",
+      "taxRate": 18,
+      "taxAmount": 180,
+      "fbrStatus": "Approved",
+      "fbr_hash": "46c070b6869b8cdca32c9d39a1021fa99f4ba4c79a03c6ec25131fd1f158a2a9",
+      "qr_image_path": "data:image/png;base64,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",
+      "fbr_verified_status": "Approved",
+      "fbrInvoiceNumber": "128515136280",
+      "fbrSubmitTime": "2026-06-02T13:02:00.387Z"
     }
   ],
   "purchases": [
@@ -417,7 +451,7 @@
       "price": 150,
       "date": "2026-05-01T12:00:00.000Z",
       "nextReminderDate": "2026-05-31T12:00:00.000Z",
-      "reminderStatus": "Confirmed",
+      "reminderStatus": "Sent",
       "notes": "Oil changed. Recommended tuning next visit."
     },
     {
@@ -511,10 +545,21 @@
       "id": "cash_chest",
       "bankName": "Cash-in-Hand Drawer",
       "accountNumber": "CASH-PRIMARY",
-      "balance": 41303
+      "balance": 42483
     }
   ],
   "ledger": [
+    {
+      "id": "led_1780405310565",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-06-02T13:01:50.544Z",
+      "type": "Credit",
+      "amount": 1180,
+      "description": "Sale [T1] T1-INV-20260602-004 (Walk-in Customer)",
+      "balanceAfter": 42483,
+      "referenceId": "inv_1780405310544"
+    },
     {
       "id": "led_1780401380341",
       "bankAccountId": "cash_chest",
@@ -687,9 +732,25 @@
       "status": "Approved",
       "retryCount": 1,
       "lastAttempt": "2026-06-02T11:56:28.628Z"
+    },
+    {
+      "id": "q_1780405310564",
+      "invoiceId": "inv_1780405310544",
+      "invoiceNumber": "T1-INV-20260602-004",
+      "status": "Approved",
+      "retryCount": 1,
+      "lastAttempt": "2026-06-02T13:02:00.387Z"
     }
   ],
   "terminalSyncLogs": [
+    {
+      "id": "ts_1780405320423",
+      "terminalId": "T1",
+      "actionType": "SALE",
+      "status": "SUCCESS",
+      "timestamp": "2026-06-02T13:02:00.423Z",
+      "details": "FBR auto-synced T1-INV-20260602-004. Ref: 128515136280"
+    },
     {
       "id": "ts_1780401388649",
       "terminalId": "T1",
@@ -737,6 +798,14 @@
       "status": "SUCCESS",
       "timestamp": "2026-06-02T11:56:20.341Z",
       "details": "Receipt T1-INV-20260602-003. Total: Rs. 10410"
+    },
+    {
+      "id": "ts_1780405310564",
+      "terminalId": "T1",
+      "actionType": "SALE",
+      "status": "SUCCESS",
+      "timestamp": "2026-06-02T13:01:50.564Z",
+      "details": "Receipt T1-INV-20260602-004. Total: Rs. 1180"
     }
   ],
   "analyticsCache": {

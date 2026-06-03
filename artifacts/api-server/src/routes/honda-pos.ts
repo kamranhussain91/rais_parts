@@ -713,6 +713,44 @@ router.post("/bank-accounts/transaction", (req, res) => {
   res.json({ success: true, db });
 });
 
+// POST create customer
+router.post("/customers", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const customer: Customer = req.body.customer;
+  customer.id = "cust_" + Date.now();
+  customer.creditBalance = customer.creditBalance || 0;
+  db.customers.push(customer);
+  logActivity(userId, username, `Customer added: ${customer.name}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
+// PUT update customer
+router.put("/customers/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const idx = db.customers.findIndex((c) => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Customer not found" });
+  db.customers[idx] = { ...db.customers[idx], ...req.body.customer };
+  logActivity(userId, username, `Customer updated: ${db.customers[idx].name}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
+// DELETE customer
+router.delete("/customers/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body?.auth || { userId: "1", username: "admin" };
+  const idx = db.customers.findIndex((c) => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Customer not found" });
+  const name = db.customers[idx].name;
+  db.customers.splice(idx, 1);
+  logActivity(userId, username, `Customer deleted: ${name}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
 // POST create backup
 router.post("/backup/create", (req, res) => {
   const db = readDB();
