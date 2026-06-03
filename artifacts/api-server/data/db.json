@@ -437,7 +437,8 @@
       ],
       "totalAmount": 45800,
       "paymentMethod": "Bank Transfer",
-      "bankAccountId": "bank_1"
+      "bankAccountId": "bank_1",
+      "status": "received"
     }
   ],
   "services": [
@@ -503,6 +504,43 @@
       "notes": "",
       "nextReminderDate": "2026-07-02T11:16:28.763Z",
       "reminderStatus": "Sent"
+    },
+    {
+      "id": "srv_1780477822189",
+      "invoiceNumber": "SRV-20260603-001",
+      "customerName": "Haseeb",
+      "customerPhone": "03113311234",
+      "bikeModel": "CD-70",
+      "serviceType": "Oil Change",
+      "price": 150,
+      "date": "2026-06-03T09:10:22.189Z",
+      "notes": "",
+      "nextReminderDate": "2026-07-03T09:10:22.189Z",
+      "reminderStatus": "Pending"
+    },
+    {
+      "id": "srv_1780477870565",
+      "invoiceNumber": "SRV-20260603-002",
+      "customerName": "Sajid",
+      "customerPhone": "03113344334",
+      "bikeModel": "CD-70",
+      "serviceType": "Bike Tuning",
+      "price": 500,
+      "date": "2026-06-03T09:11:10.565Z",
+      "notes": ""
+    },
+    {
+      "id": "srv_1780477900482",
+      "invoiceNumber": "SRV-20260603-003",
+      "customerName": "Afzal",
+      "customerPhone": "03134533245",
+      "bikeModel": "CD-70",
+      "serviceType": "Oil Change",
+      "price": 300,
+      "date": "2026-06-03T09:11:40.482Z",
+      "notes": "",
+      "nextReminderDate": "2026-07-03T09:11:40.482Z",
+      "reminderStatus": "Pending"
     }
   ],
   "expenses": [
@@ -545,10 +583,43 @@
       "id": "cash_chest",
       "bankName": "Cash-in-Hand Drawer",
       "accountNumber": "CASH-PRIMARY",
-      "balance": 42483
+      "balance": 43433
     }
   ],
   "ledger": [
+    {
+      "id": "led_1780477900482",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-06-03T09:11:40.482Z",
+      "type": "Credit",
+      "amount": 300,
+      "description": "Workshop Oil Change SRV-20260603-003",
+      "balanceAfter": 43433,
+      "referenceId": "srv_1780477900482"
+    },
+    {
+      "id": "led_1780477870565",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-06-03T09:11:10.565Z",
+      "type": "Credit",
+      "amount": 500,
+      "description": "Workshop Bike Tuning SRV-20260603-002",
+      "balanceAfter": 43133,
+      "referenceId": "srv_1780477870565"
+    },
+    {
+      "id": "led_1780477822189",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-06-03T09:10:22.189Z",
+      "type": "Credit",
+      "amount": 150,
+      "description": "Workshop Oil Change SRV-20260603-001",
+      "balanceAfter": 42633,
+      "referenceId": "srv_1780477822189"
+    },
     {
       "id": "led_1780405310565",
       "bankAccountId": "cash_chest",
@@ -673,6 +744,27 @@
       "phone": "03130000000000",
       "address": "",
       "bikeModel": "CG-125"
+    },
+    {
+      "id": "cust_1780477822189",
+      "name": "Haseeb",
+      "phone": "03113311234",
+      "address": "",
+      "bikeModel": "CD-70"
+    },
+    {
+      "id": "cust_1780477870565",
+      "name": "Sajid",
+      "phone": "03113344334",
+      "address": "",
+      "bikeModel": "CD-70"
+    },
+    {
+      "id": "cust_1780477900482",
+      "name": "Afzal",
+      "phone": "03134533245",
+      "address": "",
+      "bikeModel": "CD-70"
     }
   ],
   "suppliers": [
