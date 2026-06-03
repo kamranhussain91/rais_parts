@@ -49,7 +49,7 @@ const DEFAULT_DATABASE: AppDatabase = {
     { id: "inv_3", invoiceNumber: "INV-2026-0601-01", date: "2026-06-01T09:30:00.000Z", customerId: "cust_1", customerName: "Muhammad Salman", customerPhone: "03001234567", items: [{ productId: "prod_2", name: "Honda Genuine Engine Oil 4T 20W-50 (1L)", partNumber: "08C35-20W50", qty: 1, purchasePrice: 920, sellingPrice: 1100 }], subtotal: 1100, discount: 0, finalAmount: 1100, paymentMethod: "Cash", profit: 180 },
   ],
   purchases: [
-    { id: "pur_1", invoiceRef: "HONDA-77192", date: "2026-05-20T11:00:00.000Z", supplierName: "Honda Atlas Parts Ltd", items: [{ productId: "prod_1", name: "Honda Genuine Spark Plug (NGK)", partNumber: "98056-10100", purchasePrice: 180, qty: 50 }, { productId: "prod_2", name: "Honda Genuine Engine Oil 4T 20W-50 (1L)", partNumber: "08C35-20W50", purchasePrice: 920, qty: 40 }], totalAmount: 45800, paymentMethod: "Bank Transfer", bankAccountId: "bank_1" },
+    { id: "pur_1", invoiceRef: "HONDA-77192", date: "2026-05-20T11:00:00.000Z", supplierName: "Honda Atlas Parts Ltd", items: [{ productId: "prod_1", name: "Honda Genuine Spark Plug (NGK)", partNumber: "98056-10100", purchasePrice: 180, qty: 50 }, { productId: "prod_2", name: "Honda Genuine Engine Oil 4T 20W-50 (1L)", partNumber: "08C35-20W50", purchasePrice: 920, qty: 40 }], totalAmount: 45800, amountPaid: 45800, paymentMethod: "Bank Transfer", bankAccountId: "bank_1", status: "received" },
   ],
   services: [
     { id: "ser_1", invoiceNumber: "SRV-2026-0001", customerName: "Kashif Ali", customerPhone: "03457654321", bikeModel: "CD-70", serviceType: "Oil Change", price: 150, date: "2026-05-01T12:00:00.000Z", nextReminderDate: "2026-05-31T12:00:00.000Z", reminderStatus: "Sent", notes: "Oil changed. Recommended tuning next visit." },
@@ -294,7 +294,7 @@ router.post("/fbr/config", (req, res) => {
 router.post("/fbr/sync", async (req, res) => {
   const db = readDB();
   if (fbrConfig.internetStatus === "Offline") {
-    return res.status(400).json({ success: false, error: "Cannot sync: workstation in OFFLINE mode." });
+    res.status(400).json({ success: false, error: "Cannot sync: workstation in OFFLINE mode." }); return;
   }
   let successCount = 0;
   for (const item of (db.fbrSyncQueue || []).filter((q: any) => q.status === "Pending")) {
@@ -413,7 +413,7 @@ router.post("/sales", async (req, res) => {
   for (const item of invoice.items) {
     const lock = activePartsLocks[item.productId];
     if (lock && lock.terminalId !== terminalId) {
-      return res.status(409).json({ error: `Product locked by terminal '${lock.terminalId}'` });
+      res.status(409).json({ error: `Product locked by terminal '${lock.terminalId}'` }); return;
     }
   }
 
@@ -473,7 +473,7 @@ router.put("/sales/:id", async (req, res) => {
   const { userId, username } = auth || { userId: "1", username: "admin" };
 
   const invIdx = db.invoices.findIndex((inv) => inv.id === id);
-  if (invIdx === -1) return res.status(404).json({ success: false, error: "Invoice not found" });
+  if (invIdx === -1) { res.status(404).json({ success: false, error: "Invoice not found" }); return; }
 
   const original = db.invoices[invIdx];
 
@@ -511,21 +511,22 @@ router.put("/sales/:id", async (req, res) => {
 // GET verify invoice
 router.get("/sales/verify", (req, res) => {
   const invoiceNumber = req.query.invoice as string;
-  if (!invoiceNumber) return res.status(400).json({ success: false, error: "Invoice number required." });
+  if (!invoiceNumber) { res.status(400).json({ success: false, error: "Invoice number required." }); return; }
   const db = readDB();
   const invoice = db.invoices.find((inv) =>
     inv.invoiceNumber === invoiceNumber ||
     inv.id === invoiceNumber ||
     (inv as any).fbrInvoiceNumber === invoiceNumber
   );
-  if (!invoice) return res.status(404).json({ success: false, error: `Invoice '${invoiceNumber}' not found.` });
+  if (!invoice) { res.status(404).json({ success: false, error: `Invoice '${invoiceNumber}' not found.` }); return; }
   if (!db.terminalSyncLogs) db.terminalSyncLogs = [];
   db.terminalSyncLogs.unshift({ id: "ts_verify_" + Date.now(), terminalId: (invoice as any).terminalId || "T1", actionType: "SALE", status: "SUCCESS", timestamp: new Date().toISOString(), details: `Audit query for ${invoice.invoiceNumber}. Verified.` });
   writeDB(db);
   res.json({ success: true, invoice, storeDetails: { name: "Rais Honda Motor Labs & Parts", ntn: "8125439-0", address: "Main Chowk Road, Multan, Pakistan", phone: "+92-300-9805610", tagline: "Premium Automotive Honda Parts & Mechanical SLA Labs" } });
 });
 
-// POST record purchase
+// POST record purchase — creates order as PENDING; stock is NOT updated here.
+// Stock is only updated when the order is marked as received via PATCH below.
 router.post("/purchases", (req, res) => {
   const db = readDB();
   const purchase: PurchaseRecord = req.body.purchase;
@@ -536,21 +537,13 @@ router.post("/purchases", (req, res) => {
   purchase.status = 'pending';
   if (!purchase.amountPaid) purchase.amountPaid = 0;
 
-  purchase.items.forEach((item) => {
-    const pIdx = db.products.findIndex((p) => p.id === item.productId);
-    if (pIdx !== -1) {
-      const oldStock = db.products[pIdx].stock, oldPrice = db.products[pIdx].purchasePrice;
-      if (oldStock + item.qty > 0) db.products[pIdx].purchasePrice = Math.round(((oldStock * oldPrice) + (item.qty * item.purchasePrice)) / (oldStock + item.qty));
-      else db.products[pIdx].purchasePrice = item.purchasePrice;
-      db.products[pIdx].stock += item.qty;
-    }
-  });
-
+  // Auto-create supplier if new
   if (purchase.supplierName && !db.suppliers.find((s) => s.name.toLowerCase() === purchase.supplierName.toLowerCase())) {
     db.suppliers.push({ id: "sup_" + Date.now(), name: purchase.supplierName, phone: "", address: "", balance: 0 });
   }
   db.purchases.unshift(purchase);
 
+  // Record bank/cash debit if amount was paid upfront
   const paid = purchase.amountPaid || 0;
   if (paid > 0) {
     const targetAccId = purchase.paymentMethod === "Cash" ? "cash_chest" : (purchase.bankAccountId || "bank_1");
@@ -561,19 +554,40 @@ router.post("/purchases", (req, res) => {
     }
   }
 
-  logActivity(userId, username, `Purchase Order ${purchase.invoiceRef}. Total: Rs. ${purchase.totalAmount}, Paid: Rs. ${paid}`);
+  logActivity(userId, username, `Purchase Order ${purchase.invoiceRef} created (pending). Total: Rs. ${purchase.totalAmount}, Paid: Rs. ${paid}`);
   writeDB(db);
   res.json({ success: true, db });
 });
 
-// PATCH mark purchase as received
+// PATCH mark purchase as received — this is where stock is updated
 router.patch("/purchases/:id/receive", (req, res) => {
   const db = readDB();
   const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
   const idx = db.purchases.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Purchase not found" });
+  if (idx === -1) { res.status(404).json({ error: "Purchase not found" }); return; }
+  if (db.purchases[idx].status === 'received') { res.status(400).json({ error: "Purchase already received" }); return; }
+
   db.purchases[idx].status = 'received';
-  logActivity(userId, username, `Purchase ${db.purchases[idx].invoiceRef} marked as received`);
+
+  // Update inventory stock and recalculate weighted average purchase price
+  db.purchases[idx].items.forEach((item) => {
+    const pIdx = db.products.findIndex((p) => p.id === item.productId);
+    if (pIdx !== -1) {
+      const oldStock = db.products[pIdx].stock;
+      const oldPrice = db.products[pIdx].purchasePrice;
+      // Weighted average cost
+      if (oldStock + item.qty > 0) {
+        db.products[pIdx].purchasePrice = Math.round(
+          ((oldStock * oldPrice) + (item.qty * item.purchasePrice)) / (oldStock + item.qty)
+        );
+      } else {
+        db.products[pIdx].purchasePrice = item.purchasePrice;
+      }
+      db.products[pIdx].stock += item.qty;
+    }
+  });
+
+  logActivity(userId, username, `Purchase ${db.purchases[idx].invoiceRef} marked as received — inventory updated (+${db.purchases[idx].items.reduce((s, i) => s + i.qty, 0)} units)`);
   writeDB(db);
   res.json({ success: true, db });
 });
@@ -652,7 +666,7 @@ router.put("/expenses/:id", (req, res) => {
   const db = readDB();
   const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
   const idx = db.expenses.findIndex((e) => e.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Expense not found" });
+  if (idx === -1) { res.status(404).json({ error: "Expense not found" }); return; }
 
   const old = db.expenses[idx];
   const { category, amount, description, date } = req.body;
@@ -663,7 +677,7 @@ router.put("/expenses/:id", (req, res) => {
 
   // Adjust ledger if amount changed
   if (diff !== 0) {
-    const accId = old.bankAccountId || "cash_chest";
+    const accId = (old as any).bankAccountId || "cash_chest";
     const accIdx = db.accounts.findIndex((a) => a.id === accId);
     if (accIdx !== -1) {
       db.accounts[accIdx].balance -= diff;
@@ -681,11 +695,11 @@ router.delete("/expenses/:id", (req, res) => {
   const db = readDB();
   const { userId, username } = req.body?.auth || { userId: "1", username: "admin" };
   const idx = db.expenses.findIndex((e) => e.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Expense not found" });
+  if (idx === -1) { res.status(404).json({ error: "Expense not found" }); return; }
 
   const exp = db.expenses[idx];
   // Reverse the debit from the account
-  const accId = exp.bankAccountId || "cash_chest";
+  const accId = (exp as any).bankAccountId || "cash_chest";
   const accIdx = db.accounts.findIndex((a) => a.id === accId);
   if (accIdx !== -1) {
     db.accounts[accIdx].balance += exp.amount;
@@ -704,7 +718,7 @@ router.post("/bank-accounts/transaction", (req, res) => {
   const { id, type, amount, description } = req.body;
   const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
   const accIdx = db.accounts.findIndex((a) => a.id === id);
-  if (accIdx === -1) return res.status(404).json({ error: "Account not found" });
+  if (accIdx === -1) { res.status(404).json({ error: "Account not found" }); return; }
   const acc = db.accounts[accIdx];
   if (type === "Credit") acc.balance += amount; else acc.balance -= amount;
   db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: id, bankName: acc.bankName, date: new Date().toISOString(), type, amount, description, balanceAfter: acc.balance });
@@ -731,7 +745,7 @@ router.put("/customers/:id", (req, res) => {
   const db = readDB();
   const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
   const idx = db.customers.findIndex((c) => c.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Customer not found" });
+  if (idx === -1) { res.status(404).json({ error: "Customer not found" }); return; }
   db.customers[idx] = { ...db.customers[idx], ...req.body.customer };
   logActivity(userId, username, `Customer updated: ${db.customers[idx].name}`);
   writeDB(db);
@@ -743,7 +757,7 @@ router.delete("/customers/:id", (req, res) => {
   const db = readDB();
   const { userId, username } = req.body?.auth || { userId: "1", username: "admin" };
   const idx = db.customers.findIndex((c) => c.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Customer not found" });
+  if (idx === -1) { res.status(404).json({ error: "Customer not found" }); return; }
   const name = db.customers[idx].name;
   db.customers.splice(idx, 1);
   logActivity(userId, username, `Customer deleted: ${name}`);
@@ -775,8 +789,8 @@ router.post("/backup/create", (req, res) => {
 router.post("/backup/restore", (req, res) => {
   const { backupData, auth } = req.body;
   const { userId, username } = auth || { userId: "1", username: "admin" };
-  if (!backupData || typeof backupData !== "object") return res.status(400).json({ success: false, error: "Invalid backup structure." });
-  if (!backupData.products || !backupData.invoices || !backupData.services || !backupData.accounts) return res.status(400).json({ success: false, error: "Backup missing required tables." });
+  if (!backupData || typeof backupData !== "object") { res.status(400).json({ success: false, error: "Invalid backup structure." }); return; }
+  if (!backupData.products || !backupData.invoices || !backupData.services || !backupData.accounts) { res.status(400).json({ success: false, error: "Backup missing required tables." }); return; }
   try {
     const oldDB = readDB();
     const restored: AppDatabase = { ...backupData, users: backupData.users || oldDB.users, backups: oldDB.backups };

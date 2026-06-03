@@ -36,9 +36,9 @@
       "barcode": "9805610100",
       "category": "Electrical",
       "compatibility": "CD-70, CD-70 Dream, Pridor",
-      "purchasePrice": 180,
+      "purchasePrice": 800,
       "sellingPrice": 250,
-      "stock": 29,
+      "stock": 129,
       "minStock": 10,
       "supplierName": "Honda Atlas Parts Ltd",
       "location": "Rack A, Shelf 2"
@@ -52,7 +52,7 @@
       "compatibility": "CG-125, CG-125 Self, CB-150F",
       "purchasePrice": 920,
       "sellingPrice": 1100,
-      "stock": 32,
+      "stock": 82,
       "minStock": 8,
       "supplierName": "Honda Atlas Parts Ltd",
       "location": "Pallet B, Floor"
@@ -66,7 +66,7 @@
       "compatibility": "CD-70, CG-125",
       "purchasePrice": 320,
       "sellingPrice": 450,
-      "stock": 2,
+      "stock": 102,
       "minStock": 10,
       "supplierName": "Allied Auto Distributors",
       "location": "Rack B, Shelf 1"
@@ -94,7 +94,7 @@
       "compatibility": "CD-70",
       "purchasePrice": 1450,
       "sellingPrice": 1950,
-      "stock": 6,
+      "stock": 56,
       "minStock": 4,
       "supplierName": "Zahid Auto Traders",
       "location": "Rack C, Shelf 1"
@@ -415,6 +415,47 @@
   ],
   "purchases": [
     {
+      "id": "pur_1780478571981",
+      "invoiceRef": "PO-376120",
+      "date": "2026-06-03T09:22:51.981Z",
+      "supplierName": "Honda Atlas Parts Ltd",
+      "items": [
+        {
+          "productId": "prod_1",
+          "name": "Honda Genuine Spark Plug (NGK)",
+          "partNumber": "98056-10100",
+          "purchasePrice": 980,
+          "qty": 100
+        },
+        {
+          "productId": "prod_2",
+          "name": "Honda Genuine Engine Oil 4T 20W-50 (1L)",
+          "partNumber": "08C35-20W50",
+          "purchasePrice": 920,
+          "qty": 50
+        },
+        {
+          "productId": "prod_3",
+          "name": "Front Brake Shoe Set",
+          "partNumber": "43125-086-030",
+          "purchasePrice": 320,
+          "qty": 100
+        },
+        {
+          "productId": "prod_5",
+          "name": "CD-70 Chain Sprocket Kit",
+          "partNumber": "40530-KCC-900",
+          "purchasePrice": 1450,
+          "qty": 50
+        }
+      ],
+      "totalAmount": 248500,
+      "amountPaid": 248500,
+      "paymentMethod": "Bank Transfer",
+      "bankAccountId": "bank_1",
+      "status": "pending"
+    },
+    {
       "id": "pur_1",
       "invoiceRef": "HONDA-77192",
       "date": "2026-05-20T11:00:00.000Z",
@@ -571,7 +612,7 @@
       "id": "bank_1",
       "bankName": "Meezan Bank Shariah",
       "accountNumber": "2014-030214-01",
-      "balance": 135000
+      "balance": -113500
     },
     {
       "id": "bank_2",
@@ -587,6 +628,17 @@
     }
   ],
   "ledger": [
+    {
+      "id": "led_1780478571981",
+      "bankAccountId": "bank_1",
+      "bankName": "Meezan Bank Shariah",
+      "date": "2026-06-03T09:22:51.981Z",
+      "type": "Debit",
+      "amount": 248500,
+      "description": "Purchase PO-376120 (Honda Atlas Parts Ltd)",
+      "balanceAfter": -113500,
+      "referenceId": "pur_1780478571981"
+    },
     {
       "id": "led_1780477900482",
       "bankAccountId": "cash_chest",

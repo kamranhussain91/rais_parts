@@ -561,19 +561,29 @@ export const PurchaseView: React.FC = () => {
         </button>
       </div>
 
-      {/* Table */}
+      {/* Purchase History Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-36" />
+            <col className="w-28" />
+            <col />
+            <col className="w-16" />
+            <col className="w-32" />
+            <col className="w-32" />
+            <col className="w-24" />
+            <col className="w-40" />
+          </colgroup>
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Supplier</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Items</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total</th>
-              <th className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider">Paid</th>
-              <th className="px-5 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="px-5 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-3.5 text-left   text-[11px] font-bold text-slate-500 uppercase tracking-wider">Invoice No</th>
+              <th className="px-4 py-3.5 text-left   text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3.5 text-left   text-[11px] font-bold text-slate-500 uppercase tracking-wider">Supplier</th>
+              <th className="px-4 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Items</th>
+              <th className="px-4 py-3.5 text-right  text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total</th>
+              <th className="px-4 py-3.5 text-right  text-[11px] font-bold text-slate-500 uppercase tracking-wider">Paid</th>
+              <th className="px-4 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -586,40 +596,74 @@ export const PurchaseView: React.FC = () => {
             )}
             {purchases.map(pc => (
               <tr key={pc.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-5 py-3.5">
-                  <span className="font-bold text-xs font-mono text-slate-800">{pc.invoiceRef}</span>
+
+                {/* Invoice No */}
+                <td className="px-4 py-3.5">
+                  <span className="text-xs font-bold font-mono text-slate-800 truncate block">{pc.invoiceRef}</span>
                 </td>
-                <td className="px-5 py-3.5 text-xs text-slate-600 whitespace-nowrap">{fmt(pc.date)}</td>
-                <td className="px-5 py-3.5 text-xs font-semibold text-slate-800">{pc.supplierName}</td>
-                <td className="px-5 py-3.5 text-xs text-slate-500">{pc.items.length} item{pc.items.length !== 1 ? 's' : ''}</td>
-                <td className="px-5 py-3.5">
-                  <span className="text-xs font-bold text-slate-800 font-mono">Rs. {pc.totalAmount.toLocaleString()}</span>
+
+                {/* Date */}
+                <td className="px-4 py-3.5 text-xs text-slate-500 whitespace-nowrap">
+                  {fmt(pc.date)}
                 </td>
-                <td className="px-5 py-3.5">
-                  <span className="text-xs text-slate-600 font-mono">Rs. {(pc.amountPaid || 0).toLocaleString()}</span>
+
+                {/* Supplier */}
+                <td className="px-4 py-3.5 text-xs font-semibold text-slate-800 truncate">
+                  {pc.supplierName}
                 </td>
-                <td className="px-5 py-3.5 text-center">
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold capitalize ${
-                    pc.status === 'received' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+
+                {/* Items count */}
+                <td className="px-4 py-3.5 text-center">
+                  <span className="text-xs text-slate-500 font-mono">{pc.items.length}</span>
+                </td>
+
+                {/* Total */}
+                <td className="px-4 py-3.5 text-right">
+                  <span className="text-xs font-bold text-slate-800 font-mono">
+                    Rs.&nbsp;{pc.totalAmount.toLocaleString()}
+                  </span>
+                </td>
+
+                {/* Paid */}
+                <td className="px-4 py-3.5 text-right">
+                  <span className={`text-xs font-mono font-semibold ${
+                    (pc.amountPaid || 0) >= pc.totalAmount ? 'text-emerald-600' : 'text-slate-600'
+                  }`}>
+                    Rs.&nbsp;{(pc.amountPaid || 0).toLocaleString()}
+                  </span>
+                </td>
+
+                {/* Status badge */}
+                <td className="px-4 py-3.5 text-center">
+                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold w-full max-w-[80px] ${
+                    pc.status === 'received'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-amber-100 text-amber-700'
                   }`}>
                     {pc.status === 'received' ? 'Received' : 'Pending'}
                   </span>
                 </td>
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center justify-center gap-2">
+
+                {/* Actions */}
+                <td className="px-4 py-3.5">
+                  <div className="flex items-center justify-center gap-1.5">
                     <button
                       onClick={() => setViewPurchase(pc)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
                     >
-                      <Eye className="w-3.5 h-3.5" /> View
+                      <Eye className="w-3 h-3" /> View
                     </button>
-                    {pc.status !== 'received' && (
+                    {pc.status !== 'received' ? (
                       <button
                         onClick={() => handleReceive(pc.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
                       >
-                        <CheckCircle className="w-3.5 h-3.5" /> Receive
+                        <CheckCircle className="w-3 h-3" /> Receive
                       </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 text-green-600 text-[11px] font-semibold whitespace-nowrap">
+                        <CheckCircle className="w-3 h-3" /> Done
+                      </span>
                     )}
                   </div>
                 </td>
