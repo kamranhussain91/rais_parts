@@ -930,15 +930,21 @@ export const PurchaseView: React.FC = () => {
                   </span>
                 </td>
 
-                {/* Status badge */}
+                {/* Status — clickable when pending */}
                 <td className="px-4 py-3.5 text-center">
-                  <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[11px] font-bold w-full max-w-[80px] ${
-                    pc.status === 'received'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {pc.status === 'received' ? 'Received' : 'Pending'}
-                  </span>
+                  {pc.status === 'received' ? (
+                    <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-700">
+                      <CheckCircle className="w-3 h-3" /> Received
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleReceive(pc.id)}
+                      title="Click to mark as received — updates inventory"
+                      className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 hover:bg-green-100 hover:text-green-700 transition-colors cursor-pointer"
+                    >
+                      <CheckCircle className="w-3 h-3" /> Pending
+                    </button>
+                  )}
                 </td>
 
                 {/* Actions */}
@@ -958,15 +964,6 @@ export const PurchaseView: React.FC = () => {
                     >
                       <Pencil className="w-3 h-3" /> Edit
                     </button>
-                    {pc.status !== 'received' && (
-                      <button
-                        onClick={() => handleReceive(pc.id)}
-                        title="Mark as received — updates inventory"
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <CheckCircle className="w-3 h-3" /> Receive
-                      </button>
-                    )}
                   </div>
                 </td>
               </tr>

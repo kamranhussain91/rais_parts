@@ -66,7 +66,7 @@
       "compatibility": "CD-70, CG-125",
       "purchasePrice": 320,
       "sellingPrice": 450,
-      "stock": 200,
+      "stock": 500,
       "minStock": 10,
       "supplierName": "Allied Auto Distributors",
       "location": "Rack B, Shelf 1"
@@ -561,6 +561,53 @@
   ],
   "purchases": [
     {
+      "id": "pur_1783592588258",
+      "invoiceRef": "PO-389095",
+      "date": "2026-07-09T10:23:08.258Z",
+      "supplierName": "Honda Atlas Parts Ltd",
+      "items": [
+        {
+          "productId": "prod_2",
+          "name": "Honda Genuine Engine Oil 4T 20W-50 (1L)",
+          "partNumber": "08C35-20W50",
+          "purchasePrice": 920,
+          "qty": 100
+        }
+      ],
+      "totalAmount": 92000,
+      "amountPaid": 70000,
+      "paymentMethod": "Bank Transfer",
+      "bankAccountId": "bank_1",
+      "status": "pending"
+    },
+    {
+      "id": "pur_1783592414640",
+      "invoiceRef": "PO-517821",
+      "date": "2026-07-09T10:20:14.640Z",
+      "supplierName": "Honda Atlas Parts Ltd",
+      "items": [
+        {
+          "productId": "prod_3",
+          "name": "Front Brake Shoe Set",
+          "partNumber": "43125-086-030",
+          "purchasePrice": 320,
+          "qty": 100
+        },
+        {
+          "productId": "prod_3",
+          "name": "Front Brake Shoe Set",
+          "partNumber": "43125-086-030",
+          "purchasePrice": 320,
+          "qty": 200
+        }
+      ],
+      "totalAmount": 96000,
+      "amountPaid": 70000,
+      "paymentMethod": "Bank Transfer",
+      "bankAccountId": "bank_1",
+      "status": "received"
+    },
+    {
       "id": "pur_1783591450054",
       "invoiceRef": "PO-698899",
       "date": "2026-07-09T10:04:10.054Z",
@@ -816,7 +863,7 @@
       "id": "bank_1",
       "bankName": "Meezan Bank Shariah",
       "accountNumber": "2014-030214-01",
-      "balance": -271400
+      "balance": -411400
     },
     {
       "id": "bank_2",
@@ -832,6 +879,28 @@
     }
   ],
   "ledger": [
+    {
+      "id": "led_1783592588259",
+      "bankAccountId": "bank_1",
+      "bankName": "Meezan Bank Shariah",
+      "date": "2026-07-09T10:23:08.258Z",
+      "type": "Debit",
+      "amount": 70000,
+      "description": "Purchase PO-389095 (Honda Atlas Parts Ltd)",
+      "balanceAfter": -411400,
+      "referenceId": "pur_1783592588258"
+    },
+    {
+      "id": "led_1783592414640",
+      "bankAccountId": "bank_1",
+      "bankName": "Meezan Bank Shariah",
+      "date": "2026-07-09T10:20:14.640Z",
+      "type": "Debit",
+      "amount": 70000,
+      "description": "Purchase PO-517821 (Honda Atlas Parts Ltd)",
+      "balanceAfter": -341400,
+      "referenceId": "pur_1783592414640"
+    },
     {
       "id": "led_1783591450054",
       "bankAccountId": "bank_1",
