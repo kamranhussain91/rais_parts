@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from './AppContext';
 import { PurchaseRecord, PurchaseItem, Product } from '../types';
-import { Plus, Trash2, X, Eye, CheckCircle, Search, ChevronDown, Package } from 'lucide-react';
+import { Plus, Trash2, X, Eye, CheckCircle, Search, ChevronDown, Package, Pencil, AlertTriangle } from 'lucide-react';
 
 // ─── Searchable Product Dropdown (fixed-position — bypasses all overflow clips) ─
 interface ProductDropdownProps {
@@ -238,6 +238,302 @@ const ViewModal: React.FC<{ purchase: PurchaseRecord; onClose: () => void }> = (
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Edit Purchase Modal ──────────────────────────────────────────────────────
+interface EditPurchaseModalProps {
+  purchase: PurchaseRecord;
+  products: Product[];
+  suppliers: { id: string; name: string }[];
+  accounts: { id: string; bankName: string; balance: number }[];
+  onClose: () => void;
+  onSave: (id: string, purchase: PurchaseRecord) => Promise<boolean>;
+}
+
+const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, products, suppliers, accounts, onClose, onSave }) => {
+  const [supplierName,  setSupplierName]  = useState(purchase.supplierName);
+  const [date,          setDate]          = useState(purchase.date.split('T')[0]);
+  const [amountPaid,    setAmountPaid]    = useState<number>(purchase.amountPaid || 0);
+  const [notes,         setNotes]         = useState(purchase.notes || '');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'Mobile Wallet'>(purchase.paymentMethod);
+  const [bankAccountId, setBankAccountId] = useState(purchase.bankAccountId || accounts[0]?.id || '');
+  const [items,         setItems]         = useState<DraftItem[]>(
+    purchase.items.map(i => ({ productId: i.productId, name: i.name, partNumber: i.partNumber || '', qty: i.qty, unitCost: i.purchasePrice }))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const total   = items.reduce((s, i) => s + i.qty * i.unitCost, 0);
+  const balance = total - amountPaid;
+  const isReceived = purchase.status === 'received';
+
+  const addItem    = () => setItems(prev => [...prev, { productId: '', name: '', partNumber: '', qty: 1, unitCost: 0 }]);
+  const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx));
+
+  const updateItem = (idx: number, field: keyof DraftItem, value: string | number) =>
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item));
+
+  const handleProductSelect = (idx: number, product: Product) =>
+    setItems(prev => prev.map((item, i) => i === idx ? {
+      ...item,
+      productId:  product.id,
+      name:       product.name,
+      partNumber: product.partNumber || '',
+      unitCost:   product.purchasePrice,
+    } : item));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplierName.trim()) return alert('Please select a supplier.');
+    if (items.some(i => !i.productId))  return alert('Please select a product for each item row.');
+    if (items.some(i => i.qty < 1))     return alert('Quantity must be at least 1 for all items.');
+
+    setSaving(true);
+    const purchaseItems: PurchaseItem[] = items.map(i => ({
+      productId:     i.productId,
+      name:          i.name,
+      partNumber:    i.partNumber,
+      purchasePrice: i.unitCost,
+      qty:           i.qty,
+    }));
+
+    const updated: PurchaseRecord = {
+      ...purchase,
+      date:          new Date(date).toISOString(),
+      supplierName,
+      items:         purchaseItems,
+      totalAmount:   total,
+      amountPaid,
+      paymentMethod,
+      bankAccountId,
+      notes:         notes.trim() || undefined,
+    };
+
+    const ok = await onSave(purchase.id, updated);
+    setSaving(false);
+    if (ok) onClose();
+    else alert('Failed to update purchase order. Please try again.');
+  };
+
+  const filteredAccounts = accounts.filter(a =>
+    paymentMethod === 'Cash' ? a.id === 'cash_chest' : a.id !== 'cash_chest'
+  );
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-100 max-h-[95vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-800">Edit Purchase Order</h3>
+            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{purchase.invoiceRef}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Received warning */}
+        {isReceived && (
+          <div className="mx-6 mt-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 shrink-0">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-700 font-medium leading-relaxed">
+              This order is already <strong>received</strong>. Editing prices or quantities will automatically
+              recalculate inventory stock levels and weighted average costs across the entire system.
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-6 space-y-5 overflow-y-auto flex-1">
+
+            {/* Row 1: Supplier + Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Supplier <span className="text-red-500">*</span></label>
+                <select
+                  value={supplierName}
+                  onChange={e => setSupplierName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 bg-white cursor-pointer"
+                >
+                  <option value="">Select supplier...</option>
+                  {suppliers.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  {/* keep current if not in list */}
+                  {supplierName && !suppliers.find(s => s.name === supplierName) && (
+                    <option value={supplierName}>{supplierName}</option>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Date</label>
+                <input
+                  type="date" value={date} onChange={e => setDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20"
+                />
+              </div>
+            </div>
+
+            {/* Row 2: Payment Method + Account + Amount Paid */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Payment Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={e => setPaymentMethod(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-red-400 bg-white cursor-pointer"
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Mobile Wallet">Mobile Wallet</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Debit Account</label>
+                <select
+                  value={bankAccountId}
+                  onChange={e => setBankAccountId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-red-400 bg-white cursor-pointer"
+                >
+                  {filteredAccounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.bankName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Amount Paid (Rs.)</label>
+                <input
+                  type="number" min="0"
+                  value={amountPaid || ''}
+                  onChange={e => setAmountPaid(Math.max(0, Number(e.target.value)))}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20"
+                />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Notes</label>
+              <textarea
+                value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder="Optional notes about this order..."
+                rows={2}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400/20 resize-none"
+              />
+            </div>
+
+            {/* ── Items ─────────────────────────────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-semibold text-slate-700">
+                  Items <span className="text-red-500">*</span>
+                  <span className="text-slate-400 font-normal ml-2">({items.length} {items.length === 1 ? 'item' : 'items'})</span>
+                </label>
+                <button
+                  type="button" onClick={addItem}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-600 hover:text-red-700 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Item
+                </button>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl">
+                <div
+                  className="grid gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-200 rounded-t-xl text-[10px] font-bold text-slate-500 uppercase tracking-wider"
+                  style={{ gridTemplateColumns: '1fr 70px 100px 90px 32px' }}
+                >
+                  <span>Product</span>
+                  <span className="text-center">Qty</span>
+                  <span className="text-center">Unit Cost</span>
+                  <span className="text-right">Line Total</span>
+                  <span />
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="grid gap-2 px-3 py-2.5 items-center hover:bg-slate-50/50 transition-colors"
+                      style={{ gridTemplateColumns: '1fr 70px 100px 90px 32px' }}
+                    >
+                      <ProductDropdown
+                        products={products}
+                        selectedId={item.productId}
+                        onSelect={p => handleProductSelect(idx, p)}
+                      />
+                      <input
+                        type="number" min="1" value={item.qty}
+                        onChange={e => updateItem(idx, 'qty', Math.max(1, Number(e.target.value)))}
+                        className="w-full px-2 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-center outline-none focus:border-red-400"
+                      />
+                      <input
+                        type="number" min="0"
+                        value={item.unitCost || ''}
+                        onChange={e => updateItem(idx, 'unitCost', Math.max(0, Number(e.target.value)))}
+                        placeholder="0"
+                        className="w-full px-2 py-1.5 border border-slate-200 rounded-md text-xs font-mono text-center outline-none focus:border-red-400"
+                      />
+                      <span className="text-right font-mono text-xs font-bold text-slate-800">
+                        Rs. {(item.qty * item.unitCost).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(idx)}
+                        disabled={items.length === 1}
+                        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Totals footer */}
+                <div className="border-t-2 border-slate-200 bg-slate-50 rounded-b-xl px-3 py-3 space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-semibold">Order Total:</span>
+                    <span className="font-bold font-mono text-slate-800">Rs. {total.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500 font-semibold">Amount Paid:</span>
+                    <span className="font-mono text-emerald-600 font-bold">Rs. {amountPaid.toLocaleString()}</span>
+                  </div>
+                  {balance > 0 && (
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-200">
+                      <span className="text-slate-500 font-semibold">Balance Due:</span>
+                      <span className="font-mono text-red-600 font-bold text-sm">Rs. {balance.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {balance <= 0 && total > 0 && (
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-200">
+                      <span className="text-slate-500 font-semibold">Balance Due:</span>
+                      <span className="font-mono text-emerald-600 font-bold">Fully Paid</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex gap-3 px-6 py-4 border-t border-slate-100 shrink-0 bg-white rounded-b-2xl">
+            <button
+              type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit" disabled={saving}
+              className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold transition-all cursor-pointer"
+            >
+              {saving ? 'Saving...' : isReceived ? 'Save & Update Inventory' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -534,9 +830,10 @@ const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({ products, suppliers
 
 // ─── Main PurchaseView ────────────────────────────────────────────────────────
 export const PurchaseView: React.FC = () => {
-  const { db, savePurchase, receivePurchase } = useApp();
-  const [showNew,      setShowNew]      = useState(false);
-  const [viewPurchase, setViewPurchase] = useState<PurchaseRecord | null>(null);
+  const { db, savePurchase, editPurchase, receivePurchase } = useApp();
+  const [showNew,         setShowNew]         = useState(false);
+  const [viewPurchase,    setViewPurchase]    = useState<PurchaseRecord | null>(null);
+  const [editingPurchase, setEditingPurchase] = useState<PurchaseRecord | null>(null);
 
   if (!db) return <div className="p-8 text-slate-400 text-sm">Loading purchases...</div>;
 
@@ -649,21 +946,26 @@ export const PurchaseView: React.FC = () => {
                   <div className="flex items-center justify-center gap-1.5">
                     <button
                       onClick={() => setViewPurchase(pc)}
+                      title="View details"
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
                     >
                       <Eye className="w-3 h-3" /> View
                     </button>
-                    {pc.status !== 'received' ? (
+                    <button
+                      onClick={() => setEditingPurchase(pc)}
+                      title="Edit purchase order"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    {pc.status !== 'received' && (
                       <button
                         onClick={() => handleReceive(pc.id)}
+                        title="Mark as received — updates inventory"
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-green-200 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap"
                       >
                         <CheckCircle className="w-3 h-3" /> Receive
                       </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1.5 text-green-600 text-[11px] font-semibold whitespace-nowrap">
-                        <CheckCircle className="w-3 h-3" /> Done
-                      </span>
                     )}
                   </div>
                 </td>
@@ -684,6 +986,20 @@ export const PurchaseView: React.FC = () => {
       )}
       {viewPurchase && (
         <ViewModal purchase={viewPurchase} onClose={() => setViewPurchase(null)} />
+      )}
+      {editingPurchase && (
+        <EditPurchaseModal
+          purchase={editingPurchase}
+          products={products}
+          suppliers={suppliers}
+          accounts={accounts}
+          onClose={() => setEditingPurchase(null)}
+          onSave={async (id, updated) => {
+            const ok = await editPurchase(id, updated);
+            if (ok) setEditingPurchase(null);
+            return ok;
+          }}
+        />
       )}
     </div>
   );

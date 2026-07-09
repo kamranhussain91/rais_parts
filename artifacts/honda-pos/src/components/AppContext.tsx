@@ -32,6 +32,7 @@ interface AppContextType {
   saveSaleInvoice: (invoice: SaleInvoice) => Promise<SaleInvoice | null>;
   updateSaleInvoice: (id: string, updates: Partial<SaleInvoice> & { notes?: string }) => Promise<boolean>;
   savePurchase: (purchase: PurchaseRecord) => Promise<boolean>;
+  editPurchase: (id: string, purchase: PurchaseRecord) => Promise<boolean>;
   receivePurchase: (id: string) => Promise<boolean>;
   saveServiceRecord: (service: ServiceRecord) => Promise<boolean>;
   updateRemindersStatus: (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed') => Promise<boolean>;
@@ -268,6 +269,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setDb(result.db);
         return true;
       }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
+  const editPurchase = async (id: string, purchase: PurchaseRecord): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/purchases/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchase,
+          auth: { userId: currentUser?.id, username: currentUser?.username }
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update purchase');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
       return false;
     } catch (err) {
       console.error(err);
@@ -521,6 +542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveSaleInvoice,
       updateSaleInvoice,
       savePurchase,
+      editPurchase,
       receivePurchase,
       saveServiceRecord,
       updateRemindersStatus,

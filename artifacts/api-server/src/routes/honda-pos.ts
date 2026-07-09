@@ -559,6 +559,62 @@ router.post("/purchases", (req, res) => {
   res.json({ success: true, db });
 });
 
+// PUT update purchase order (edit prices, quantities, items, payment)
+router.put("/purchases/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const idx = db.purchases.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) { res.status(404).json({ error: "Purchase not found" }); return; }
+
+  const existing = db.purchases[idx];
+  const updates: PurchaseRecord = req.body.purchase;
+
+  // If already received, reverse old inventory effect then apply updated items
+  if (existing.status === 'received') {
+    // Step 1: subtract old quantities from inventory
+    existing.items.forEach((oldItem) => {
+      const pIdx = db.products.findIndex((p) => p.id === oldItem.productId);
+      if (pIdx !== -1) {
+        db.products[pIdx].stock = Math.max(0, db.products[pIdx].stock - oldItem.qty);
+      }
+    });
+
+    // Step 2: apply new quantities + recalculate weighted avg purchase price
+    updates.items.forEach((newItem) => {
+      const pIdx = db.products.findIndex((p) => p.id === newItem.productId);
+      if (pIdx !== -1) {
+        const curStock = db.products[pIdx].stock;
+        const curPrice = db.products[pIdx].purchasePrice;
+        if (curStock + newItem.qty > 0) {
+          db.products[pIdx].purchasePrice = Math.round(
+            ((curStock * curPrice) + (newItem.qty * newItem.purchasePrice)) / (curStock + newItem.qty)
+          );
+        } else {
+          db.products[pIdx].purchasePrice = newItem.purchasePrice;
+        }
+        db.products[pIdx].stock += newItem.qty;
+      }
+    });
+  }
+
+  // Update the purchase record (keep status + id + invoiceRef)
+  db.purchases[idx] = {
+    ...existing,
+    supplierName:  updates.supplierName  || existing.supplierName,
+    date:          updates.date          || existing.date,
+    items:         updates.items,
+    totalAmount:   updates.totalAmount,
+    amountPaid:    updates.amountPaid    ?? existing.amountPaid,
+    paymentMethod: updates.paymentMethod || existing.paymentMethod,
+    bankAccountId: updates.bankAccountId ?? existing.bankAccountId,
+    notes:         updates.notes,
+  };
+
+  logActivity(userId, username, `Purchase ${existing.invoiceRef} updated — Total: Rs. ${updates.totalAmount}, Paid: Rs. ${updates.amountPaid}`);
+  writeDB(db);
+  res.json({ success: true, db });
+});
+
 // PATCH mark purchase as received — this is where stock is updated
 router.patch("/purchases/:id/receive", (req, res) => {
   const db = readDB();
