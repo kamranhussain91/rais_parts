@@ -35,6 +35,7 @@ interface AppContextType {
   editPurchase: (id: string, purchase: PurchaseRecord) => Promise<boolean>;
   receivePurchase: (id: string) => Promise<boolean>;
   saveServiceRecord: (service: ServiceRecord) => Promise<boolean>;
+  updateServiceRecord: (id: string, updates: Partial<ServiceRecord>) => Promise<boolean>;
   updateRemindersStatus: (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed') => Promise<boolean>;
   saveExpense: (expense: Expense) => Promise<boolean>;
   updateExpense: (id: string, updates: Partial<Expense>) => Promise<boolean>;
@@ -336,6 +337,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateServiceRecord = async (id: string, updates: Partial<ServiceRecord>): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates,
+          auth: { userId: currentUser?.id, username: currentUser?.username }
+        })
+      });
+      if (!res.ok) throw new Error('API failed to update service record');
+      const result = await res.json();
+      if (result.success) { setDb(result.db); return true; }
+      return false;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  };
+
   const updateRemindersStatus = async (ids: string[], status: 'Pending' | 'Sent' | 'Confirmed'): Promise<boolean> => {
     try {
       const res = await fetch('/api/reminders/status', {
@@ -545,6 +566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       editPurchase,
       receivePurchase,
       saveServiceRecord,
+      updateServiceRecord,
       updateRemindersStatus,
       saveExpense,
       updateExpense,

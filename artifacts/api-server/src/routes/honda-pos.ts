@@ -717,6 +717,67 @@ router.post("/services", (req, res) => {
   res.json({ success: true, db });
 });
 
+// PUT update service record
+router.put("/services/:id", (req, res) => {
+  const db = readDB();
+  const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
+  const idx = db.services.findIndex((s) => s.id === req.params.id);
+  if (idx === -1) { res.status(404).json({ error: "Service record not found" }); return; }
+
+  const existing = db.services[idx];
+  const updates: Partial<ServiceRecord> = req.body.updates;
+
+  // If price changed, adjust the cash balance accordingly
+  const oldPrice = existing.price;
+  const newPrice = updates.price !== undefined ? Number(updates.price) : oldPrice;
+  const priceDiff = newPrice - oldPrice;
+  if (priceDiff !== 0) {
+    const cashIdx = db.accounts.findIndex((a) => a.id === "cash_chest");
+    if (cashIdx !== -1) {
+      db.accounts[cashIdx].balance += priceDiff;
+      db.ledger.unshift({
+        id: "led_" + Date.now(), bankAccountId: "cash_chest",
+        bankName: "Cash-in-Hand Drawer", date: new Date().toISOString(),
+        type: priceDiff > 0 ? "Credit" : "Debit",
+        amount: Math.abs(priceDiff),
+        description: `Workshop edit adjustment: ${existing.invoiceNumber} (${priceDiff > 0 ? '+' : ''}Rs. ${priceDiff})`,
+        balanceAfter: db.accounts[cashIdx].balance,
+        referenceId: existing.id,
+      });
+    }
+  }
+
+  // Rebuild reminder fields if service type changed to/from Oil Change
+  const newType = (updates.serviceType ?? existing.serviceType) as ServiceRecord["serviceType"];
+  let nextReminderDate = existing.nextReminderDate;
+  let reminderStatus = existing.reminderStatus;
+  if (newType === "Oil Change" && existing.serviceType !== "Oil Change") {
+    const rd = new Date(); rd.setDate(rd.getDate() + 30);
+    nextReminderDate = rd.toISOString();
+    reminderStatus = "Pending";
+  } else if (newType !== "Oil Change") {
+    nextReminderDate = undefined;
+    reminderStatus = undefined;
+  }
+
+  db.services[idx] = {
+    ...existing,
+    customerName:     updates.customerName     ?? existing.customerName,
+    customerPhone:    updates.customerPhone     ?? existing.customerPhone,
+    bikeModel:        updates.bikeModel         ?? existing.bikeModel,
+    serviceType:      newType,
+    price:            newPrice,
+    notes:            updates.notes             ?? existing.notes,
+    nextReminderDate,
+    reminderStatus:   (updates.reminderStatus   ?? reminderStatus) as ServiceRecord["reminderStatus"],
+  };
+
+  logActivity(userId, username, `Workshop service ${existing.invoiceNumber} updated — Price: Rs. ${newPrice}`);
+  writeDB(db);
+  invalidateAnalyticsCache();
+  res.json({ success: true, db });
+});
+
 // POST bulk update reminder status
 router.post("/reminders/status", (req, res) => {
   const db = readDB();
