@@ -38,7 +38,7 @@
       "compatibility": "CD-70, CD-70 Dream, Pridor",
       "purchasePrice": 879,
       "sellingPrice": 250,
-      "stock": 379,
+      "stock": 387,
       "minStock": 10,
       "supplierName": "Honda Atlas Parts Ltd",
       "location": "Rack A, Shelf 2"
@@ -52,7 +52,7 @@
       "compatibility": "CG-125, CG-125 Self, CB-150F",
       "purchasePrice": 920,
       "sellingPrice": 1100,
-      "stock": 132,
+      "stock": 242,
       "minStock": 8,
       "supplierName": "Honda Atlas Parts Ltd",
       "location": "Pallet B, Floor"
@@ -66,7 +66,7 @@
       "compatibility": "CD-70, CG-125",
       "purchasePrice": 320,
       "sellingPrice": 450,
-      "stock": 500,
+      "stock": 498,
       "minStock": 10,
       "supplierName": "Allied Auto Distributors",
       "location": "Rack B, Shelf 1"
@@ -557,9 +557,79 @@
       "fbrInvoiceNumber": "128618289803",
       "fbrSubmitTime": "2026-07-09T09:54:38.570Z",
       "notes": ""
+    },
+    {
+      "id": "inv_1783774585275",
+      "invoiceNumber": "T1-INV-20260711-001",
+      "date": "2026-07-11T12:56:25.275Z",
+      "customerId": "cust_1780398139184",
+      "customerName": "Walk-in Customer",
+      "customerPhone": "N/A",
+      "customerAddress": "",
+      "customerBikeModel": "",
+      "items": [
+        {
+          "productId": "prod_1",
+          "name": "Honda Genuine Spark Plug (NGK)",
+          "partNumber": "98056-10100",
+          "qty": 2,
+          "purchasePrice": 879,
+          "sellingPrice": 250
+        },
+        {
+          "productId": "prod_3",
+          "name": "Front Brake Shoe Set",
+          "partNumber": "43125-086-030",
+          "qty": 2,
+          "purchasePrice": 320,
+          "sellingPrice": 450
+        }
+      ],
+      "subtotal": 1400,
+      "discount": 0,
+      "finalAmount": 1652,
+      "paymentMethod": "Cash",
+      "bankAccountId": "cash_chest",
+      "profit": 0,
+      "terminalId": "T1",
+      "taxRate": 18,
+      "taxAmount": 252,
+      "fbrStatus": "Approved",
+      "fbr_hash": "7780385a03ade5ddaeff191642997be04720bf3a0cbd79513660b20c551b1311",
+      "qr_image_path": "data:image/png;base64,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",
+      "fbr_verified_status": "Approved",
+      "fbrInvoiceNumber": "121525148526",
+      "fbrSubmitTime": "2026-07-11T12:56:29.037Z"
     }
   ],
   "purchases": [
+    {
+      "id": "pur_1783592747976",
+      "invoiceRef": "PO-638347",
+      "date": "2026-07-09T10:25:47.976Z",
+      "supplierName": "Honda Atlas Parts Ltd",
+      "items": [
+        {
+          "productId": "prod_1",
+          "name": "Honda Genuine Spark Plug (NGK)",
+          "partNumber": "98056-10100",
+          "purchasePrice": 879,
+          "qty": 10
+        },
+        {
+          "productId": "prod_2",
+          "name": "Honda Genuine Engine Oil 4T 20W-50 (1L)",
+          "partNumber": "08C35-20W50",
+          "purchasePrice": 920,
+          "qty": 10
+        }
+      ],
+      "totalAmount": 17990,
+      "amountPaid": 17000,
+      "paymentMethod": "Bank Transfer",
+      "bankAccountId": "bank_1",
+      "status": "received"
+    },
     {
       "id": "pur_1783592588258",
       "invoiceRef": "PO-389095",
@@ -578,7 +648,7 @@
       "amountPaid": 70000,
       "paymentMethod": "Bank Transfer",
       "bankAccountId": "bank_1",
-      "status": "pending"
+      "status": "received"
     },
     {
       "id": "pur_1783592414640",
@@ -837,6 +907,14 @@
   ],
   "expenses": [
     {
+      "id": "exp_1783592929654",
+      "date": "2026-07-09T10:28:49.654Z",
+      "category": "Rent",
+      "amount": 5000,
+      "description": "AAA",
+      "bankAccountId": "cash_chest"
+    },
+    {
       "id": "exp_1",
       "date": "2026-05-25T18:00:00.000Z",
       "category": "Electricity",
@@ -863,7 +941,7 @@
       "id": "bank_1",
       "bankName": "Meezan Bank Shariah",
       "accountNumber": "2014-030214-01",
-      "balance": -411400
+      "balance": -428400
     },
     {
       "id": "bank_2",
@@ -875,10 +953,43 @@
       "id": "cash_chest",
       "bankName": "Cash-in-Hand Drawer",
       "accountNumber": "CASH-PRIMARY",
-      "balance": 54123
+      "balance": 50775
     }
   ],
   "ledger": [
+    {
+      "id": "led_1783774585328",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-07-11T12:56:25.275Z",
+      "type": "Credit",
+      "amount": 1652,
+      "description": "Sale [T1] T1-INV-20260711-001 (Walk-in Customer)",
+      "balanceAfter": 50775,
+      "referenceId": "inv_1783774585275"
+    },
+    {
+      "id": "led_1783592929654",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-07-09T10:28:49.654Z",
+      "type": "Debit",
+      "amount": 5000,
+      "description": "Expense: Rent - AAA",
+      "balanceAfter": 49123,
+      "referenceId": "exp_1783592929654"
+    },
+    {
+      "id": "led_1783592747976",
+      "bankAccountId": "bank_1",
+      "bankName": "Meezan Bank Shariah",
+      "date": "2026-07-09T10:25:47.976Z",
+      "type": "Debit",
+      "amount": 17000,
+      "description": "Purchase PO-638347 (Honda Atlas Parts Ltd)",
+      "balanceAfter": -428400,
+      "referenceId": "pur_1783592747976"
+    },
     {
       "id": "led_1783592588259",
       "bankAccountId": "bank_1",
@@ -1254,9 +1365,33 @@
       "status": "Approved",
       "retryCount": 1,
       "lastAttempt": "2026-07-09T09:54:38.570Z"
+    },
+    {
+      "id": "q_1783774585328",
+      "invoiceId": "inv_1783774585275",
+      "invoiceNumber": "T1-INV-20260711-001",
+      "status": "Approved",
+      "retryCount": 1,
+      "lastAttempt": "2026-07-11T12:56:29.037Z"
     }
   ],
   "terminalSyncLogs": [
+    {
+      "id": "ts_verify_1783774665591",
+      "terminalId": "T1",
+      "actionType": "SALE",
+      "status": "SUCCESS",
+      "timestamp": "2026-07-11T12:57:45.591Z",
+      "details": "Audit query for T1-INV-20260711-001. Verified."
+    },
+    {
+      "id": "ts_1783774589055",
+      "terminalId": "T1",
+      "actionType": "SALE",
+      "status": "SUCCESS",
+      "timestamp": "2026-07-11T12:56:29.055Z",
+      "details": "FBR auto-synced T1-INV-20260711-001. Ref: 121525148526"
+    },
     {
       "id": "ts_1783590878590",
       "terminalId": "T1",
@@ -1368,6 +1503,14 @@
       "status": "SUCCESS",
       "timestamp": "2026-07-09T09:54:36.314Z",
       "details": "Receipt T1-INV-20260709-003. Total: Rs. 3481"
+    },
+    {
+      "id": "ts_1783774585328",
+      "terminalId": "T1",
+      "actionType": "SALE",
+      "status": "SUCCESS",
+      "timestamp": "2026-07-11T12:56:25.328Z",
+      "details": "Receipt T1-INV-20260711-001. Total: Rs. 1652"
     }
   ],
   "analyticsCache": {
