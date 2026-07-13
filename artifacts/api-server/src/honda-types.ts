@@ -97,14 +97,20 @@ export interface PurchaseRecord {
 
 export type ServiceType = 'Oil Change' | 'Bike Tuning' | 'Brake Service' | 'Engine Service';
 
+export interface ServiceLine {
+  serviceType: ServiceType;
+  price: number;
+}
+
 export interface ServiceRecord {
   id: string;
   invoiceNumber: string;
   customerName: string;
   customerPhone: string;
   bikeModel: string;
-  serviceType: ServiceType;
-  price: number;
+  serviceType: ServiceType;       // primary service (Oil Change if present, else first line)
+  price: number;                  // total of all service lines
+  serviceLines?: ServiceLine[];   // multi-service support; undefined on legacy records
   date: string; // ISO String
   nextReminderDate?: string; // ISO String (for Oil Change, default 30 days later)
   reminderStatus?: 'Pending' | 'Sent' | 'Confirmed';

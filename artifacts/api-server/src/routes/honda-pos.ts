@@ -686,6 +686,13 @@ router.post("/services", (req, res) => {
   const service: ServiceRecord = req.body.service;
   const { userId, username } = req.body.auth || { userId: "1", username: "admin" };
 
+  // Multi-service: compute total price and primary service type from serviceLines
+  if (service.serviceLines && service.serviceLines.length > 0) {
+    service.price = service.serviceLines.reduce((sum, l) => sum + Number(l.price), 0);
+    const hasOilChange = service.serviceLines.some((l) => l.serviceType === "Oil Change");
+    service.serviceType = hasOilChange ? "Oil Change" : service.serviceLines[0].serviceType;
+  }
+
   if (!service.invoiceNumber) {
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const cnt = db.services.filter((s) => s.date.startsWith(new Date().toISOString().slice(0, 10))).length;
@@ -709,7 +716,10 @@ router.post("/services", (req, res) => {
   const cashIdx = db.accounts.findIndex((a) => a.id === "cash_chest");
   if (cashIdx !== -1) {
     db.accounts[cashIdx].balance += service.price;
-    db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: "cash_chest", bankName: "Cash-in-Hand Drawer", date: service.date, type: "Credit", amount: service.price, description: `Workshop ${service.serviceType} ${service.invoiceNumber}`, balanceAfter: db.accounts[cashIdx].balance, referenceId: service.id });
+    const svcLabel = service.serviceLines && service.serviceLines.length > 1
+      ? `${service.serviceLines.length} services`
+      : service.serviceType;
+    db.ledger.unshift({ id: "led_" + Date.now(), bankAccountId: "cash_chest", bankName: "Cash-in-Hand Drawer", date: service.date, type: "Credit", amount: service.price, description: `Workshop: ${svcLabel} — ${service.invoiceNumber}`, balanceAfter: db.accounts[cashIdx].balance, referenceId: service.id });
   }
 
   logActivity(userId, username, `Workshop service ${service.invoiceNumber}. Earned: Rs. ${service.price}`);
@@ -727,9 +737,21 @@ router.put("/services/:id", (req, res) => {
   const existing = db.services[idx];
   const updates: Partial<ServiceRecord> = req.body.updates;
 
-  // If price changed, adjust the cash balance accordingly
+  // Multi-service: if serviceLines provided, recompute price and primary type
+  const newLines = updates.serviceLines ?? existing.serviceLines;
+  let newPrice: number;
+  let newType: ServiceRecord["serviceType"];
+  if (newLines && newLines.length > 0) {
+    newPrice = newLines.reduce((sum, l) => sum + Number(l.price), 0);
+    const hasOilChange = newLines.some((l) => l.serviceType === "Oil Change");
+    newType = hasOilChange ? "Oil Change" : newLines[0].serviceType;
+  } else {
+    newPrice = updates.price !== undefined ? Number(updates.price) : existing.price;
+    newType = (updates.serviceType ?? existing.serviceType) as ServiceRecord["serviceType"];
+  }
+
+  // Adjust cash balance for price difference
   const oldPrice = existing.price;
-  const newPrice = updates.price !== undefined ? Number(updates.price) : oldPrice;
   const priceDiff = newPrice - oldPrice;
   if (priceDiff !== 0) {
     const cashIdx = db.accounts.findIndex((a) => a.id === "cash_chest");
@@ -747,8 +769,7 @@ router.put("/services/:id", (req, res) => {
     }
   }
 
-  // Rebuild reminder fields if service type changed to/from Oil Change
-  const newType = (updates.serviceType ?? existing.serviceType) as ServiceRecord["serviceType"];
+  // Rebuild reminder fields based on whether Oil Change is in the service lines
   let nextReminderDate = existing.nextReminderDate;
   let reminderStatus = existing.reminderStatus;
   if (newType === "Oil Change" && existing.serviceType !== "Oil Change") {
@@ -767,6 +788,7 @@ router.put("/services/:id", (req, res) => {
     bikeModel:        updates.bikeModel         ?? existing.bikeModel,
     serviceType:      newType,
     price:            newPrice,
+    serviceLines:     newLines,
     notes:            updates.notes             ?? existing.notes,
     nextReminderDate,
     reminderStatus:   (updates.reminderStatus   ?? reminderStatus) as ServiceRecord["reminderStatus"],
