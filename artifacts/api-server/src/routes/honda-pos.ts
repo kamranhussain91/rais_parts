@@ -7,6 +7,7 @@ import { logger } from "../lib/logger";
 import type {
   Product,
   SaleInvoice,
+  SaleItem,
   PurchaseRecord,
   ServiceRecord,
   Expense,
@@ -465,7 +466,7 @@ router.post("/sales", async (req, res) => {
   res.json({ success: true, db, invoice });
 });
 
-// PUT update invoice (edit customer info, payment, discount)
+// PUT update invoice (edit customer info, payment, discount, and/or items)
 router.put("/sales/:id", async (req, res) => {
   const db = readDB();
   const { id } = req.params;
@@ -476,35 +477,66 @@ router.put("/sales/:id", async (req, res) => {
   if (invIdx === -1) { res.status(404).json({ success: false, error: "Invoice not found" }); return; }
 
   const original = db.invoices[invIdx];
+  const newDiscount = updates.discount !== undefined ? Number(updates.discount) : original.discount;
 
   const updatedInvoice = {
     ...original,
-    customerName: updates.customerName ?? original.customerName,
-    customerPhone: updates.customerPhone ?? original.customerPhone,
-    customerAddress: updates.customerAddress ?? original.customerAddress,
+    customerName:     updates.customerName     ?? original.customerName,
+    customerPhone:    updates.customerPhone     ?? original.customerPhone,
+    customerAddress:  updates.customerAddress   ?? original.customerAddress,
     customerBikeModel: updates.customerBikeModel ?? original.customerBikeModel,
-    paymentMethod: updates.paymentMethod ?? original.paymentMethod,
-    bankAccountId: updates.bankAccountId ?? original.bankAccountId,
-    discount: updates.discount !== undefined ? Number(updates.discount) : original.discount,
-    notes: updates.notes ?? (original as any).notes,
+    paymentMethod:    updates.paymentMethod     ?? original.paymentMethod,
+    bankAccountId:    updates.bankAccountId     ?? original.bankAccountId,
+    discount:         newDiscount,
+    notes:            updates.notes             ?? (original as any).notes,
   } as SaleInvoice;
 
-  // Recalculate totals if discount changed
-  if (updates.discount !== undefined && Number(updates.discount) !== original.discount) {
+  // ── Item editing: restore old stock, apply new stock, recalculate totals ──
+  if (updates.items && Array.isArray(updates.items)) {
+    // Step 1: restore stock from original items
+    original.items.forEach((oldItem) => {
+      const pIdx = db.products.findIndex((p) => p.id === oldItem.productId);
+      if (pIdx !== -1) db.products[pIdx].stock += oldItem.qty;
+    });
+
+    // Step 2: deduct stock for new items (floor at 0)
+    updates.items.forEach((newItem: SaleItem) => {
+      const pIdx = db.products.findIndex((p) => p.id === newItem.productId);
+      if (pIdx !== -1) db.products[pIdx].stock = Math.max(0, db.products[pIdx].stock - newItem.qty);
+    });
+
+    updatedInvoice.items = updates.items;
+
+    // Step 3: recalculate financials
+    const newSubtotal = updates.items.reduce((s: number, i: SaleItem) => s + i.sellingPrice * i.qty, 0);
     const taxRate = (original as any).taxRate ?? 18;
-    const taxableSubtotal = Math.max(0, original.subtotal - Number(updates.discount));
+    const taxableSubtotal = Math.max(0, newSubtotal - newDiscount);
     const taxAmount = Math.round(taxableSubtotal * (taxRate / 100));
-    (updatedInvoice as any).taxRate = taxRate;
+    const newProfit = updates.items.reduce((s: number, i: SaleItem) => s + (i.sellingPrice - i.purchasePrice) * i.qty, 0) - newDiscount;
+
+    updatedInvoice.subtotal     = newSubtotal;
+    updatedInvoice.finalAmount  = taxableSubtotal + taxAmount;
+    updatedInvoice.profit       = Math.max(0, newProfit);
+    (updatedInvoice as any).taxRate   = taxRate;
+    (updatedInvoice as any).taxAmount = taxAmount;
+
+  } else if (updates.discount !== undefined && Number(updates.discount) !== original.discount) {
+    // No item change — just discount changed
+    const taxRate = (original as any).taxRate ?? 18;
+    const taxableSubtotal = Math.max(0, original.subtotal - newDiscount);
+    const taxAmount = Math.round(taxableSubtotal * (taxRate / 100));
+    (updatedInvoice as any).taxRate   = taxRate;
     (updatedInvoice as any).taxAmount = taxAmount;
     updatedInvoice.finalAmount = taxableSubtotal + taxAmount;
-    updatedInvoice.profit = Math.max(0, (original.profit ?? 0) + (original.discount - Number(updates.discount)));
+    updatedInvoice.profit = Math.max(0, (original.profit ?? 0) + (original.discount - newDiscount));
   }
 
   await updateInvoiceQRCodeAndHash(updatedInvoice, req.get("host"));
   db.invoices[invIdx] = updatedInvoice;
 
-  logActivity(userId, username, `Edited invoice ${original.invoiceNumber}`);
+  logActivity(userId, username, `Edited invoice ${original.invoiceNumber} (${updates.items ? 'items+' : ''}customer/payment)`);
   writeDB(db);
+  invalidateAnalyticsCache();
   res.json({ success: true, db, invoice: updatedInvoice });
 });
 
