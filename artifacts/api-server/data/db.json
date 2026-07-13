@@ -808,11 +808,21 @@
       "customerPhone": "03457654321",
       "bikeModel": "CD-70",
       "serviceType": "Oil Change",
-      "price": 150,
+      "price": 950,
       "date": "2026-05-01T12:00:00.000Z",
       "nextReminderDate": "2026-05-31T12:00:00.000Z",
       "reminderStatus": "Sent",
-      "notes": "Oil changed. Recommended tuning next visit."
+      "notes": "Oil changed. Recommended tuning next visit.",
+      "serviceLines": [
+        {
+          "serviceType": "Oil Change",
+          "price": 150
+        },
+        {
+          "serviceType": "Bike Tuning",
+          "price": 800
+        }
+      ]
     },
     {
       "id": "ser_2",
@@ -911,6 +921,29 @@
       "price": 778,
       "date": "2026-07-09T09:57:30.378Z",
       "notes": ""
+    },
+    {
+      "id": "srv_1783968072721",
+      "invoiceNumber": "SRV-20260713-001",
+      "customerName": "Sadam",
+      "customerPhone": "03145534533",
+      "bikeModel": "CD-70",
+      "serviceType": "Oil Change",
+      "price": 950,
+      "serviceLines": [
+        {
+          "serviceType": "Bike Tuning",
+          "price": 800
+        },
+        {
+          "serviceType": "Oil Change",
+          "price": 150
+        }
+      ],
+      "date": "2026-07-13T18:41:12.721Z",
+      "notes": "",
+      "nextReminderDate": "2026-08-12T18:41:12.721Z",
+      "reminderStatus": "Pending"
     }
   ],
   "expenses": [
@@ -961,10 +994,32 @@
       "id": "cash_chest",
       "bankName": "Cash-in-Hand Drawer",
       "accountNumber": "CASH-PRIMARY",
-      "balance": 50775
+      "balance": 52525
     }
   ],
   "ledger": [
+    {
+      "id": "led_1783968435444",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-07-13T18:47:15.444Z",
+      "type": "Credit",
+      "amount": 800,
+      "description": "Workshop edit adjustment: SRV-2026-0001 (+Rs. 800)",
+      "balanceAfter": 52525,
+      "referenceId": "ser_1"
+    },
+    {
+      "id": "led_1783968072721",
+      "bankAccountId": "cash_chest",
+      "bankName": "Cash-in-Hand Drawer",
+      "date": "2026-07-13T18:41:12.721Z",
+      "type": "Credit",
+      "amount": 950,
+      "description": "Workshop Oil Change SRV-20260713-001",
+      "balanceAfter": 51725,
+      "referenceId": "srv_1783968072721"
+    },
     {
       "id": "led_1783774585328",
       "bankAccountId": "cash_chest",
@@ -1282,6 +1337,13 @@
       "phone": "bascba",
       "address": "",
       "bikeModel": "CG-125"
+    },
+    {
+      "id": "cust_1783968072721",
+      "name": "Sadam",
+      "phone": "03145534533",
+      "address": "",
+      "bikeModel": "CD-70"
     }
   ],
   "suppliers": [
