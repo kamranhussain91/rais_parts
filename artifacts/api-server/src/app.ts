@@ -1,9 +1,12 @@
 import express, { type Express } from "express";
 import cors from "cors";
-import pinoHttp = require("pino-http");
+import * as pinoHttpModule from "pino-http";
 import type { IncomingMessage, ServerResponse } from "http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+const pinoHttp = pinoHttpModule as unknown as (opts?: Record<string, unknown>) => express.RequestHandler;
+
 const app: Express = express();
 app.use(
   pinoHttp({
