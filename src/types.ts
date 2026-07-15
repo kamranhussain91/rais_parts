@@ -8,9 +8,11 @@ export type UserRole = 'Super Admin' | 'Admin' | 'Manager' | 'Cashier' | 'Store 
 export interface User {
   id: string;
   username: string;
+  email?: string;
   role: UserRole;
   name: string;
-  password?: string;
+  password?: string;      // plaintext, only ever inbound on create/update — never stored or returned
+  passwordHash?: string;  // server-side only, stripped from all client responses
   status?: 'Active' | 'Inactive';
   lastLogin?: string;
 }

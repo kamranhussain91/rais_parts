@@ -132,6 +132,8 @@ export const InventoryView: React.FC = () => {
 
       {/* ── PRODUCTS TABLE ── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+       <div className="overflow-x-auto">
+        <div className="min-w-[880px]">
         {/* Table header */}
         <div className="grid grid-cols-[2fr_1.4fr_1.2fr_0.8fr_0.9fr_0.7fr_0.8fr_0.7fr] gap-0 border-b border-slate-100 bg-slate-50 px-5 py-3">
           {['PRODUCT', 'PART NO / BARCODE', 'CATEGORY / BRAND', 'COST', 'SALE PRICE', 'STOCK', 'STATUS', 'ACTIONS'].map(h => (
@@ -248,6 +250,8 @@ export const InventoryView: React.FC = () => {
             })}
           </div>
         )}
+        </div>
+       </div>
       </div>
 
       {/* ── ADD / EDIT MODAL ── */}

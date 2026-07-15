@@ -146,6 +146,7 @@ const ReceiptModal: React.FC<{ invoice: SaleInvoice; onClose: () => void }> = ({
                   <p className="text-neutral-500">FBR: {(invoice as any).fbrStatus || 'Pending'}</p>
                 </div>
               </div>
+              <div className="overflow-x-auto">
               <table className="w-full text-[11px] border-collapse">
                 <thead>
                   <tr className="bg-neutral-800 text-white">
@@ -168,6 +169,7 @@ const ReceiptModal: React.FC<{ invoice: SaleInvoice; onClose: () => void }> = ({
                   ))}
                 </tbody>
               </table>
+              </div>
               <div className="flex justify-end mt-4">
                 <div className="w-60 space-y-1.5 text-[11px]">
                   <div className="flex justify-between text-neutral-600"><span>Subtotal</span><span className="font-mono">Rs. {invoice.subtotal.toLocaleString()}</span></div>

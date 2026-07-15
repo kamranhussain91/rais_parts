@@ -1,5 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './components/AppContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './components/ui/alert-dialog';
 import { DashboardView } from './components/DashboardView';
 import { POSView } from './components/POSView';
 import { InventoryView } from './components/InventoryView';
@@ -30,7 +40,9 @@ import {
   BarChart,
   CloudLightning,
   LogOut,
-  UserCheck
+  UserCheck,
+  Menu,
+  X
 } from 'lucide-react';
 
 const hasAdminPrivileges = (role: string | null | undefined): boolean => {
@@ -38,7 +50,7 @@ const hasAdminPrivileges = (role: string | null | undefined): boolean => {
   return role === 'Super Admin' || role === 'Admin' || role === 'Manager';
 };
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<{ inDrawer?: boolean; onNavigate?: () => void }> = ({ inDrawer, onNavigate }) => {
   const { currentTab, setCurrentTab, currentUser, db } = useApp();
 
   const menuItems = [
@@ -60,7 +72,10 @@ const Sidebar: React.FC = () => {
   if (!db) return null;
 
   return (
-    <div className="w-64 bg-white text-slate-700 flex flex-col justify-between shrink-0 no-print border-r border-slate-200" id="main-sidebar-body">
+    <div
+      className={`w-64 h-full bg-white text-slate-700 flex-col justify-between shrink-0 no-print border-r border-slate-200 ${inDrawer ? 'flex' : 'hidden lg:flex'}`}
+      {...(inDrawer ? {} : { id: 'main-sidebar-body' })}
+    >
       <div className="p-5 bg-white border-b border-slate-200 flex items-center gap-3">
         <div className="w-9 h-9 bg-red-600 text-white rounded-lg flex items-center justify-center font-black italic text-xl leading-none shrink-0 shadow-sm">
           H
@@ -85,7 +100,7 @@ const Sidebar: React.FC = () => {
                   ? 'bg-red-600 text-white shadow-md rounded-lg'
                   : 'text-slate-600 hover:text-red-600 bg-white hover:bg-red-50/40 border border-slate-100 hover:border-red-100 rounded-lg'
               }`}
-              onClick={() => setCurrentTab(item.id)}
+              onClick={() => { setCurrentTab(item.id); onNavigate?.(); }}
             >
               <IconComp className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-slate-400'}`} />
               <span>{item.label}</span>
@@ -97,8 +112,9 @@ const Sidebar: React.FC = () => {
   );
 };
 
-const HeaderBar: React.FC = () => {
+const HeaderBar: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const { currentUser, currentTab, logout } = useApp();
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const getPageHeaderTitle = () => {
     switch (currentTab) {
@@ -121,24 +137,34 @@ const HeaderBar: React.FC = () => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 no-print">
-      <div className="space-y-0.5">
-        <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">{getPageHeaderTitle()}</h2>
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between gap-2 px-3 sm:px-6 shrink-0 no-print">
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 -ml-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shrink-0"
+          title="Open menu"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="space-y-0.5 min-w-0">
+          <h2 className="hidden sm:block text-sm font-extrabold text-slate-800 uppercase tracking-wide truncate">{getPageHeaderTitle()}</h2>
+        </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {currentUser && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 select-none border border-slate-200 bg-slate-50/50 p-2 rounded-lg">
               <div className="w-6 h-6 rounded-full bg-red-50 text-red-700 font-bold flex items-center justify-center text-xs border border-red-200 uppercase">
                 {currentUser.name[0]}
               </div>
-              <div className="text-[10px] leading-tight">
-                <strong className="block text-slate-700 font-semibold">{currentUser.name}</strong>
+              <div className="hidden sm:block text-[10px] leading-tight max-w-[140px]">
+                <strong className="block text-slate-700 font-semibold truncate">{currentUser.name}</strong>
                 <span className="text-[9px] text-slate-400 capitalize">{currentUser.role} Mode</span>
               </div>
             </div>
             <button
-              onClick={() => logout()}
+              onClick={() => setConfirmLogout(true)}
               className="px-3 py-2 border border-slate-200 hover:border-red-500 hover:bg-red-50 text-slate-500 hover:text-red-700 font-bold rounded-lg text-[10px] font-sans flex items-center gap-1.5 transition-all select-none cursor-pointer"
               title="Sign Out"
             >
@@ -148,6 +174,26 @@ const HeaderBar: React.FC = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmLogout} onOpenChange={setConfirmLogout}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out of Rais Honda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You&apos;ll need to sign in again with your email and password to access the console.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setConfirmLogout(false); logout(); }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Yes, logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 };
@@ -156,7 +202,7 @@ const ContentViewport: React.FC = () => {
   const { currentTab } = useApp();
   const isPOS = currentTab === 'pos';
   return (
-    <main className={`flex-1 bg-slate-50 ${isPOS ? 'overflow-hidden' : 'overflow-y-auto p-6'}`} id="main-content-viewport-layout">
+    <main className={`flex-1 bg-slate-50 min-w-0 ${isPOS ? 'overflow-y-auto lg:overflow-hidden' : 'overflow-y-auto p-3 sm:p-6'}`} id="main-content-viewport-layout">
       {currentTab === 'dashboard' && <DashboardView />}
       {currentTab === 'pos' && <POSView />}
       {currentTab === 'sales-history' && <SalesHistoryView />}
@@ -177,6 +223,7 @@ const ContentViewport: React.FC = () => {
 
 const InnerApp: React.FC = () => {
   const { loading, currentUser } = useApp();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   if (loading) {
     return (
@@ -193,9 +240,31 @@ const InnerApp: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-neutral-100 font-sans text-neutral-700 overflow-hidden">
+      {/* Permanent sidebar (lg and up) */}
       <Sidebar />
+
+      {/* Mobile slide-in drawer */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden no-print">
+          <div
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 max-w-[85%] shadow-2xl">
+            <Sidebar inDrawer onNavigate={() => setDrawerOpen(false)} />
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="absolute top-4 right-3 p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+              aria-label="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col min-w-0">
-        <HeaderBar />
+        <HeaderBar onMenuClick={() => setDrawerOpen(true)} />
         <ContentViewport />
       </div>
     </div>

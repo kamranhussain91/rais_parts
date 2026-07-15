@@ -209,6 +209,7 @@ export const CustomersView: React.FC = () => {
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -278,6 +279,7 @@ export const CustomersView: React.FC = () => {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modals */}

@@ -410,6 +410,7 @@ export const InvoiceVerificationView: React.FC = () => {
                     <FileText className="w-3.5 h-3.5 text-slate-400" /> Authorized Items Manifest
                   </h4>
                   <div className="border border-slate-100 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b border-slate-100">
@@ -433,6 +434,7 @@ export const InvoiceVerificationView: React.FC = () => {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
 

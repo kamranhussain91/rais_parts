@@ -125,10 +125,10 @@ export const POSView: React.FC = () => {
   });
 
   return (
-    <div className="flex h-full" id="pos-view-container">
+    <div className="flex flex-col lg:flex-row lg:h-full" id="pos-view-container">
 
       {/* ── LEFT: PRODUCT CATALOG ── */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 lg:overflow-hidden">
 
         {/* Search bar */}
         <div className="px-5 pt-4 pb-3 bg-slate-50 border-b border-slate-200 shrink-0">
@@ -146,7 +146,7 @@ export const POSView: React.FC = () => {
         </div>
 
         {/* Product grid — scrolls independently */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="lg:flex-1 lg:overflow-y-auto p-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
             {searchedCatalog.map(p => {
               const isOut = p.stock <= 0;
@@ -196,7 +196,7 @@ export const POSView: React.FC = () => {
       </div>
 
       {/* ── RIGHT: CHECKOUT PANEL (never scrolls as a whole) ── */}
-      <div className="w-[300px] xl:w-[320px] shrink-0 flex flex-col bg-white border-l border-slate-200 overflow-hidden">
+      <div className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-slate-200 lg:overflow-hidden">
 
         {/* Customer selector */}
         <div className="px-4 pt-4 pb-3 border-b border-slate-100 shrink-0">
@@ -245,7 +245,7 @@ export const POSView: React.FC = () => {
         </div>
 
         {/* Cart items — scrolls within right panel */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-[220px] lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 select-none px-4">
               <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">

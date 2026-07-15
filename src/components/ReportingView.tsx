@@ -165,6 +165,7 @@ const SalesTab: React.FC<{ invoices: any[] }> = ({ invoices }) => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -198,6 +199,7 @@ const SalesTab: React.FC<{ invoices: any[] }> = ({ invoices }) => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
@@ -223,6 +225,7 @@ const ProfitTab: React.FC<{ invoices: any[]; services: any[] }> = ({ invoices, s
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -267,6 +270,7 @@ const ProfitTab: React.FC<{ invoices: any[]; services: any[] }> = ({ invoices, s
             </tfoot>
           )}
         </table>
+        </div>
       </div>
     </div>
   );
@@ -325,6 +329,7 @@ const ExpensesTab: React.FC<{ expenses: any[] }> = ({ expenses }) => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -349,6 +354,7 @@ const ExpensesTab: React.FC<{ expenses: any[] }> = ({ expenses }) => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
@@ -393,6 +399,7 @@ const InventoryTab: React.FC<{ products: any[] }> = ({ products }) => {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -432,6 +439,7 @@ const InventoryTab: React.FC<{ products: any[] }> = ({ products }) => {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

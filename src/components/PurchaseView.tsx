@@ -206,6 +206,7 @@ const ViewModal: React.FC<{ purchase: PurchaseRecord; onClose: () => void }> = (
           <div>
             <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px] mb-2">Items ({purchase.items.length})</p>
             <div className="border border-slate-100 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-slate-50">
                   <tr>
@@ -235,6 +236,7 @@ const ViewModal: React.FC<{ purchase: PurchaseRecord; onClose: () => void }> = (
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -377,7 +379,7 @@ const EditPurchaseModal: React.FC<EditPurchaseModalProps> = ({ purchase, product
             </div>
 
             {/* Row 2: Payment Method + Account + Amount Paid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">Payment Method</label>
                 <select
@@ -656,7 +658,7 @@ const NewPurchaseModal: React.FC<NewPurchaseModalProps> = ({ products, suppliers
             </div>
 
             {/* Row 2: Payment Method + Account + Amount Paid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">Payment Method</label>
                 <select
@@ -860,6 +862,7 @@ export const PurchaseView: React.FC = () => {
 
       {/* Purchase History Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full table-fixed">
           <colgroup>
             <col className="w-36" />
@@ -970,6 +973,7 @@ export const PurchaseView: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showNew && (

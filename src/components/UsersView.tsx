@@ -37,6 +37,7 @@ export const UsersView: React.FC = () => {
   // Form Fields State
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('Cashier');
   const [status, setStatus] = useState<'Active' | 'Inactive'>('Active');
@@ -67,6 +68,7 @@ export const UsersView: React.FC = () => {
     setEditingUser(null);
     setName('');
     setUsername('');
+    setEmail('');
     setPassword('');
     setRole('Cashier');
     setStatus('Active');
@@ -83,6 +85,7 @@ export const UsersView: React.FC = () => {
     setEditingUser(u);
     setName(u.name);
     setUsername(u.username);
+    setEmail(u.email || '');
     setPassword(u.password || '');
     setRole(u.role);
     setStatus(u.status || 'Active');
@@ -117,8 +120,18 @@ export const UsersView: React.FC = () => {
       setFormError('Unique Username is required');
       return;
     }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setFormError('A valid Login Email is required (used to sign in)');
+      return;
+    }
     if (!editingUser && !password.trim()) {
       setFormError('Account access Password is required for new users');
+      return;
+    }
+    // Duplicate email check
+    const emailTaken = users.some(u => (u.email || '').toLowerCase() === email.trim().toLowerCase() && u.id !== editingUser?.id);
+    if (emailTaken) {
+      setFormError(`Email "${email}" is already assigned to another staff member`);
       return;
     }
 
@@ -133,6 +146,7 @@ export const UsersView: React.FC = () => {
       id: editingUser?.id || '',
       name: name.trim(),
       username: username.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
       password: password.trim() || undefined,
       role,
       status,
@@ -486,6 +500,21 @@ export const UsersView: React.FC = () => {
                   placeholder="e.g. majid125"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white focus:outline-none px-3.5 py-2 text-xxs font-bold text-slate-800 rounded-lg transition-all font-mono"
+                />
+              </div>
+
+              {/* Login Email */}
+              <div className="space-y-1">
+                <label className="block text-[10px] uppercase font-mono tracking-wider font-extrabold text-slate-400">
+                  Login Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. majid@store.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white focus:outline-none px-3.5 py-2 text-xxs font-bold text-slate-800 rounded-lg transition-all font-mono"
                 />
               </div>
