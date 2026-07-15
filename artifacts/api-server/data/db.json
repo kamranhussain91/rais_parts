@@ -885,7 +885,7 @@
       "date": "2026-06-03T09:10:22.189Z",
       "notes": "",
       "nextReminderDate": "2026-07-03T09:10:22.189Z",
-      "reminderStatus": "Pending"
+      "reminderStatus": "Sent"
     },
     {
       "id": "srv_1780477870565",
@@ -909,7 +909,7 @@
       "date": "2026-06-03T09:11:40.482Z",
       "notes": "",
       "nextReminderDate": "2026-07-03T09:11:40.482Z",
-      "reminderStatus": "Pending"
+      "reminderStatus": "Sent"
     },
     {
       "id": "srv_1783591050378",
@@ -943,7 +943,7 @@
       "date": "2026-07-13T18:41:12.721Z",
       "notes": "",
       "nextReminderDate": "2026-08-12T18:41:12.721Z",
-      "reminderStatus": "Pending"
+      "reminderStatus": "Sent"
     }
   ],
   "expenses": [
