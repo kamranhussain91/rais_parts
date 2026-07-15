@@ -5,7 +5,9 @@ import type { IncomingMessage, ServerResponse } from "http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
-const pinoHttp = pinoHttpModule as unknown as (opts?: Record<string, unknown>) => express.RequestHandler;
+const pinoHttpResolved =
+  (pinoHttpModule as unknown as { default?: unknown }).default ?? pinoHttpModule;
+const pinoHttp = pinoHttpResolved as unknown as (opts?: Record<string, unknown>) => express.RequestHandler;
 
 const app: Express = express();
 app.use(

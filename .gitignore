@@ -47,3 +47,15 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Env / secrets — never commit
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel

@@ -1,5 +1,10 @@
 import { Router, type IRouter } from "express";
-import { HealthCheckResponse } from "@workspace/api-zod";
+import { z } from "zod";
+
+// Inlined locally to avoid the (uncommitted) @workspace/api-zod package.
+const HealthCheckResponse = z.object({
+  status: z.string(),
+});
 
 const router: IRouter = Router();
 

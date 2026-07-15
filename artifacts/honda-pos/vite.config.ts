@@ -66,6 +66,13 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    // Local dev: forward /api to the Express server (Replit does this via its reverse proxy).
+    proxy: {
+      "/api": {
+        target: process.env.API_PROXY_TARGET || "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,
